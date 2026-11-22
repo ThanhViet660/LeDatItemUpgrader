@@ -1,0 +1,34 @@
+#
+# Documentation: https://docs.groupez.dev/zmenu/getting-started
+# Online editor: https://minecraft-inventory-builder.com/
+#
+# Get 23.5% off at MineStrator with: https://cashback.groupez.dev/
+
+commands:
+  basic_command:
+    command: basic_command
+    inventory: basic_inventory
+    permission: "zmenu.basic"
+  advanced_command:
+    command: advanced_command
+    permission: "zmenu.admin"
+    aliases:
+      - zai
+    inventory: advanced_inventory
+  pro_command:
+    command: pro_command
+    inventory: pro_inventory
+    permission: "zmenu.pro"
+  openbook:
+    command: openbook
+    permission: "zmenu.open.book"
+    actions:
+      - type: book
+        author: "Maxlego08" # Book author
+        title: "&cTest" # Book title
+        lines: # Book pages
+          1: # First page
+            - '     #34ebe8zMenu'
+            - ''
+            - ''
+            - '<hover:show_text:"#34eba8Open an url !"><click:open_url:"https://minecraft-inventory-builder.com/">#f0af24Open URL<reset>'

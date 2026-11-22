@@ -1,0 +1,126 @@
+package fr.maxlego08.menu.zcore.utils.storage;
+
+import fr.maxlego08.menu.zcore.logger.Logger;
+
+import java.io.*;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.StandardCharsets;
+
+public class DiscUtils {
+
+    // -------------------------------------------- //
+    // CONSTANTS
+    // -------------------------------------------- //
+
+    private final static String UTF8 = "UTF-8";
+
+    // -------------------------------------------- //
+    // BYTE
+    // -------------------------------------------- //
+
+    public static byte[] readBytes(File file) throws IOException {
+        int length = (int) file.length();
+        byte[] output = new byte[length];
+        try (InputStream in = new FileInputStream(file)) {
+            int offset = 0;
+            while (offset < length) {
+                int read = in.read(output, offset, (length - offset));
+                if (read == -1) break;
+                offset += read;
+            }
+        }
+        return output;
+    }
+
+    public static void writeBytes(File file, byte[] bytes) throws IOException {
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            out.write(bytes);
+        }
+    }
+
+    // -------------------------------------------- //
+    // STRING
+    // -------------------------------------------- //
+
+    public static void write(File file, String content) throws IOException {
+        writeBytes(file, utf8(content));
+    }
+
+    public static String read(File file) throws IOException {
+        return utf8(readBytes(file));
+    }
+
+    // -------------------------------------------- //
+    // CATCH
+    // -------------------------------------------- //
+
+    public static boolean writeCatch(File file, String content) {
+        try {
+            write(file, content);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static String readCatch(File file) {
+        try {
+            return read(file);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    // -------------------------------------------- //
+    // DOWNLOAD
+    // -------------------------------------------- //
+
+    public static boolean downloadUrl(String urlstring, File file) {
+        try {
+            URL url = new URL(urlstring);
+            try (ReadableByteChannel rbc = Channels.newChannel(url.openStream());
+                 FileOutputStream fos = new FileOutputStream(file)) {
+                fos.getChannel().transferFrom(rbc, 0, 1 << 24);
+            }
+            return true;
+        } catch (Exception e) {
+            Logger.error(e);
+            return false;
+        }
+    }
+
+    public static boolean downloadUrl(String urlstring, String filename) {
+        return downloadUrl(urlstring, new File(filename));
+    }
+
+    // -------------------------------------------- //
+    // FILE DELETION
+    // -------------------------------------------- //
+
+    public static boolean deleteRecursive(File path) throws FileNotFoundException {
+        if (!path.exists())
+            throw new FileNotFoundException(path.getAbsolutePath());
+        boolean ret = true;
+        if (path.isDirectory()) {
+            for (File f : path.listFiles()) {
+                ret = ret && deleteRecursive(f);
+            }
+        }
+        return ret && path.delete();
+    }
+
+    // -------------------------------------------- //
+    // UTF8 ENCODE AND DECODE
+    // -------------------------------------------- //
+
+    public static byte[] utf8(String string) {
+		return string.getBytes(StandardCharsets.UTF_8);
+	}
+
+    public static String utf8(byte[] bytes) {
+		return new String(bytes, StandardCharsets.UTF_8);
+	}
+
+}

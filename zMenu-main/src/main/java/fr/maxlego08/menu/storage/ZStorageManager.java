@@ -1,0 +1,311 @@
+package fr.maxlego08.menu.storage;
+
+import fr.maxlego08.menu.api.Inventory;
+import fr.maxlego08.menu.api.MenuPlugin;
+import fr.maxlego08.menu.api.configuration.Configuration;
+import fr.maxlego08.menu.api.event.events.PlayerOpenInventoryEvent;
+import fr.maxlego08.menu.api.players.Data;
+import fr.maxlego08.menu.api.players.inventory.InventoryPlayer;
+import fr.maxlego08.menu.api.storage.StorageManager;
+import fr.maxlego08.menu.api.storage.Tables;
+import fr.maxlego08.menu.api.storage.dto.DataDTO;
+import fr.maxlego08.menu.api.storage.dto.FirstWorldJoinDTO;
+import fr.maxlego08.menu.api.storage.dto.InventoryDTO;
+import fr.maxlego08.menu.storage.migrations.FirstWorldJoinMigration;
+import fr.maxlego08.menu.storage.migrations.PlayerDataMigration;
+import fr.maxlego08.menu.storage.migrations.PlayerInventoriesMigration;
+import fr.maxlego08.menu.storage.migrations.PlayerOpenInventoryMigration;
+import fr.maxlego08.menu.zcore.utils.GlobalDatabaseConfiguration;
+import fr.maxlego08.menu.zcore.utils.TypeSafeCache;
+import fr.maxlego08.sarah.*;
+import fr.maxlego08.sarah.database.DatabaseType;
+import fr.maxlego08.sarah.database.Schema;
+import fr.maxlego08.sarah.logger.JULogger;
+import fr.maxlego08.sarah.logger.Logger;
+import org.bukkit.Bukkit;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.jspecify.annotations.NonNull;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class ZStorageManager implements StorageManager {
+
+    private final MenuPlugin plugin;
+    private final TypeSafeCache cache = new TypeSafeCache();
+    private RequestHelper requestHelper;
+    private boolean isEnable = true;
+    private final AtomicBoolean flushing = new AtomicBoolean(false);
+
+    public ZStorageManager(MenuPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @Override
+    public void loadDatabase() {
+
+        if (this.plugin.isMockBukkitServer()) {
+            fr.maxlego08.menu.zcore.logger.Logger.info("You are using a MockBukkit server, the database is disabled.");
+            this.isEnable = false;
+            return;
+        }
+
+        MigrationManager.setMigrationTableName("zmenu_migrations");
+        MigrationManager.registerMigration(new PlayerOpenInventoryMigration());
+        MigrationManager.registerMigration(new PlayerDataMigration());
+        MigrationManager.registerMigration(new PlayerInventoriesMigration());
+        MigrationManager.registerMigration(new FirstWorldJoinMigration());
+
+        GlobalDatabaseConfiguration globalDatabaseConfiguration = new GlobalDatabaseConfiguration(this.plugin.getConfig());
+        String user = globalDatabaseConfiguration.getUser();
+        String password = globalDatabaseConfiguration.getPassword();
+        String host = globalDatabaseConfiguration.getHost();
+        String dataBase = globalDatabaseConfiguration.getDatabase();
+        String prefix = globalDatabaseConfiguration.getTablePrefix();
+        int port = globalDatabaseConfiguration.getPort();
+        boolean enableDebug = globalDatabaseConfiguration.isDebug();
+
+        String storageType = this.plugin.getConfig().getString("storage-type", "SQLITE");
+        if (storageType.equalsIgnoreCase("NONE")) {
+            fr.maxlego08.menu.zcore.logger.Logger.info("You are not using a database.");
+            this.isEnable = false;
+            return;
+        }
+
+        Logger logger = JULogger.from(this.plugin.getLogger());
+        DatabaseConnection databaseConnection;
+        if (storageType.equalsIgnoreCase("SQLITE")) {
+            databaseConnection = new SqliteConnection(new DatabaseConfiguration(prefix, user, password, port, host, dataBase, enableDebug, DatabaseType.SQLITE), this.plugin.getDataFolder(), logger);
+        } else {
+            databaseConnection = new HikariDatabaseConnection(new DatabaseConfiguration(prefix, user, password, port, host, dataBase, enableDebug, storageType.equalsIgnoreCase("MYSQL") ? DatabaseType.MYSQL : DatabaseType.MARIADB), logger);
+        }
+
+        this.requestHelper = new RequestHelper(databaseConnection, logger);
+
+        if (!databaseConnection.isValid()) {
+            fr.maxlego08.menu.zcore.logger.Logger.info("Unable to connect to database !", fr.maxlego08.menu.zcore.logger.Logger.LogType.ERROR);
+            Bukkit.getPluginManager().disablePlugin(this.plugin);
+            return;
+        } else {
+            fr.maxlego08.menu.zcore.logger.Logger.info("The database connection is valid ! (" + (storageType.equalsIgnoreCase("SQLITE") ? "SQLITE" : databaseConnection.getDatabaseConfiguration().getHost()) + ")");
+        }
+
+        MigrationManager.setDatabaseConfiguration(databaseConnection.getDatabaseConfiguration());
+        MigrationManager.execute(databaseConnection, logger);
+
+        this.startBatchTask(this.plugin.getConfig().getInt("batch-task", 10));
+    }
+
+    private void startBatchTask(int seconds) {
+
+        if (seconds <= 0) return;
+
+        if (!this.isEnable()) return;
+
+        this.plugin.getScheduler().runTimerAsync(() -> {
+            this.storeOpenInventories();
+            this.storePlayerData();
+        }, seconds, seconds, TimeUnit.SECONDS);
+    }
+
+    private void storePlayerData() {
+
+        if (!this.isEnable()) return;
+
+        List<DataDTO> dataList = this.cache.drain(DataDTO.class);
+        if (dataList.isEmpty()) return;
+
+        List<Schema> schemas = new ArrayList<>();
+        for (DataDTO dto : dataList) {
+            schemas.add(SchemaBuilder.upsert(Tables.PLAYER_DATAS, table -> {
+                table.uuid("player_id", dto.player_id()).primary();
+                table.string("key", dto.key()).primary();
+                table.string("data", dto.data());
+                table.object("expired_at", dto.expired_at() == null ? null : dto.expired_at());
+            }));
+        }
+
+        this.requestHelper.upsertMultiple(schemas);
+    }
+
+    private void storeOpenInventories() {
+
+        if (!this.isEnable()) return;
+
+        List<PlayerOpenInventoryEvent> events = this.cache.drain(PlayerOpenInventoryEvent.class);
+        if (events.isEmpty()) return;
+
+        List<Schema> schemas = new ArrayList<>();
+        for (PlayerOpenInventoryEvent event : events) {
+            if (event != null) {
+                schemas.add(SchemaBuilder.insert(Tables.PLAYER_OPEN_INVENTORIES, table -> {
+                    table.uuid("player_id", event.getPlayer().getUniqueId());
+                    table.string("plugin", event.getInventory().getPlugin().getName());
+                    table.string("inventory", event.getInventory().getFileName());
+                    table.bigInt("page", event.getPage());
+                    StringBuilder inventoriesBuilder = new StringBuilder();
+                    for (Inventory oldInventory : event.getOldInventories()) {
+                        if (oldInventory != null) {
+                            if (!inventoriesBuilder.isEmpty()) {
+                                inventoriesBuilder.append(',');
+                            }
+                            inventoriesBuilder.append(oldInventory.getFileName());
+                        }
+                    }
+                    table.string("old_inventories", inventoriesBuilder.toString());
+                }));
+            }
+        }
+        this.requestHelper.insertMultiple(schemas);
+    }
+
+    /**
+     * Writes everything still buffered, on the calling thread.
+     *
+     * <p>Deliberately synchronous. This is called from {@code onDisable}, where the plugin
+     * scheduler is being torn down, so anything handed to {@code runAsync} there would never run.</p>
+     */
+    @Override
+    public void flush() {
+
+        if (!this.isEnable()) return;
+
+        this.storeOpenInventories();
+        this.storePlayerData();
+    }
+
+    /**
+     * Persists buffered records when a player leaves.
+     *
+     * <p>Not needed to stop a player rolling their own data back, the data manager keeps it in
+     * memory for the whole uptime, but it shrinks what an outright crash can lose from up to one
+     * full batch interval of everybody's data down to whatever arrived since the last disconnect.</p>
+     *
+     * <p>Several players leaving at once coalesce into a single flush rather than one database
+     * round trip each.</p>
+     */
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+
+        if (!this.isEnable() || !Configuration.flushStorageOnQuit) return;
+
+        if (!this.flushing.compareAndSet(false, true)) return;
+
+        this.plugin.getScheduler().runAsync(w -> {
+            try {
+                this.flush();
+            } finally {
+                this.flushing.set(false);
+            }
+        });
+    }
+
+    @Override
+    public boolean isEnable() {
+        return this.isEnable;
+    }
+
+    @Override
+    public void upsertData(@NonNull UUID uuid, @NonNull Data data) {
+        if (!this.isEnable()) return;
+
+        DataDTO dto = new DataDTO(uuid, data.getKey(), data.getValue().toString(), data.getExpiredAt() == 0 ? null : new Date(data.getExpiredAt()));
+        this.cache.replaceMatching(DataDTO.class, e -> e.player_id().equals(uuid) && e.key().equals(data.getKey()), dto);
+    }
+
+    @Override
+    public void clearData() {
+        if (!this.isEnable()) return;
+
+        this.cache.clear(DataDTO.class);
+        this.plugin.getScheduler().runAsync(w -> this.requestHelper.delete(Tables.PLAYER_DATAS, table -> {
+        }));
+    }
+
+    @Override
+    public void clearData(@NonNull UUID uniqueId) {
+        if (!this.isEnable()) return;
+
+        this.cache.removeMatching(DataDTO.class, e -> e.player_id().equals(uniqueId));
+        this.plugin.getScheduler().runAsync(w -> this.requestHelper.delete(Tables.PLAYER_DATAS, table -> table.where("player_id", uniqueId)));
+    }
+
+    @Override
+    public void clearData(@NonNull String key) {
+        if (!this.isEnable()) return;
+
+        this.cache.removeMatching(DataDTO.class, e -> e.key().equals(key));
+        this.plugin.getScheduler().runAsync(w -> this.requestHelper.delete(Tables.PLAYER_DATAS, table -> table.where("key", key)));
+    }
+
+    @Override
+    public void removeData(@NonNull UUID uuid, @NonNull String key) {
+        if (!this.isEnable()) return;
+
+        this.cache.removeMatching(DataDTO.class, e -> e.player_id().equals(uuid) && e.key().equals(key));
+        this.plugin.getScheduler().runAsync(w -> this.requestHelper.delete(Tables.PLAYER_DATAS, table -> {
+            table.where("player_id", uuid);
+            table.where("key", key);
+        }));
+    }
+
+    @Override
+    public @NonNull List<DataDTO> loadPlayers() {
+        return this.isEnable() ? this.requestHelper.selectAll(Tables.PLAYER_DATAS, DataDTO.class) : List.of();
+    }
+
+    @Override
+    public @NonNull List<InventoryDTO> loadInventories() {
+        return this.isEnable() ? this.requestHelper.selectAll(Tables.PLAYER_INVENTORIES, InventoryDTO.class) : List.of();
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerOpenInventory(PlayerOpenInventoryEvent event) {
+
+        if (!this.isEnable() || !Configuration.enablePlayerOpenInventoryLogs) return;
+
+        this.cache.add(event);
+    }
+
+    @Override
+    public void removeInventory(@NonNull UUID uuid) {
+
+        if (!this.isEnable()) return;
+
+        this.plugin.getScheduler().runAsync(w -> this.requestHelper.delete(Tables.PLAYER_INVENTORIES, table -> table.where("player_id", uuid)));
+    }
+
+    @Override
+    public @NonNull Set<String> getVisitedWorlds(@NonNull UUID playerId) {
+        if (!this.isEnable()) return Set.of();
+
+        return new HashSet<>(this.requestHelper.select(Tables.FIRST_WORLD_JOIN, FirstWorldJoinDTO.class, table -> table.where("player_id", playerId))
+                .stream()
+                .map(FirstWorldJoinDTO::worldName)
+                .toList());
+    }
+
+    @Override
+    public void markWorldVisited(@NonNull UUID playerId, @NonNull String worldName) {
+        if (!this.isEnable()) return;
+
+        this.plugin.getScheduler().runAsync(w -> this.requestHelper.upsert(Tables.FIRST_WORLD_JOIN, table -> {
+            table.uuid("player_id", playerId).primary();
+            table.string("world_name", worldName).primary();
+        }));
+    }
+
+    @Override
+    public void storeInventory(@NonNull UUID uuid, @NonNull InventoryPlayer inventoryPlayer) {
+
+        if (!this.isEnable()) return;
+
+        this.plugin.getScheduler().runAsync(w -> this.requestHelper.insert(Tables.PLAYER_INVENTORIES, table -> {
+            table.uuid("player_id", uuid);
+            table.string("inventory", inventoryPlayer.toInventoryString());
+        }));
+    }
+}

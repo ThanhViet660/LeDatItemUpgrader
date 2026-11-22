@@ -1,0 +1,1639 @@
+# ToDo
+
+- [ ] Improve the firework system to put more buttonOption. Being able to put several effects, power etc.
+- [ ] Add a system that allows you to cache an ItemStack, so instead of returning the ItemStack at each opening, there
+  can be several minutes without having to recreate a new ItemStack. For decorations, buttons without placeholders for
+  example.
+- [ ] Add an order to display the list of official addons.
+- [ ] Add a ``/zm command <command> <inventory>`` command to create an order file for an inventory.
+- [ ] Add a system to translate plugin messages.
+- [ ] Update developer doc
+- [ ] Add a chance system for actions
+- [ ] Add has experience / level for requirement
+- [ ] Add is near for requirement
+- [ ] Add delay support for zMenuConvert
+- [ ] Add boolean for enable or disable inventory to load
+- [ ] Add nbt support
+- [ ] Upgrade potion support for multiple effect, main effect and color
+- [ ] Remove config.json and setup a config.yml
+- [ ] Create an extension for vscode, notepadd++ to configure the plugin faster
+- [ ] Upgrade `/zmenu save <name>` to add support for heads, fireworks and banner etc
+- [ ] When loading inventories, check the name, or the color of the item or the name of the inventory will contain a
+  placeholders, so do not call placeholder API if it is not useful. The same can be done on messages, commands or any
+  other action that uses placeholder API
+- [ ] Add the Pagination button, it will allow to take an input number, an output number and browse the value number
+- [ ] Add a way to display the list of online players in a button list
+- [ ] Add Citizen and [ZNPCsPlus](https://www.spigotmc.org/resources/znpcsplus.109380/) support to open an inventory by
+  clicking on an NPC
+- [ ] Fix the bug about the `clearInventory: true`. It does not restore inventory when the menu is closed.
+- [ ] Add the support for
+  the `http://textures.minecraft.net/texture/e34969c2684e4f62d5f87875460441a9f849d296c01e4c621636bb6acda696f7` in the
+  URL of a custom head.
+- [ ] Add matrix support for slot (like
+  this: https://abstractmenus.github.io/docs/general/item_format.html#way-4-matrix)
+- [ ] Adding more logs on the errors that can occur with custom items like ItemAdder, this will cause an error but the
+  user will not have the information of why, for example when the item does not exist.
+- [ ] Create a new class for loading buttons to add more elements, like a boolean to check if the button needs an
+  itemstack
+- [ ] Can split a file into several and thus avoid having too large files
+- [ ] Add slot type for create pattern (Allows to fill slot areas as do the outline of the inventory)
+
+- [ ] Ajouter un systéme qui permet de load un inventaire uniquement quand tout les requirements sont pr�sents
+
+# Unreleased
+
+# 1.1.1.9
+
+## New Features
+
+- **New `broadcast_title` action**: sends a title and a subtitle to every online player at once. Until now only
+  the per-player `title` action existed. The type is written `broadcast_title` or `broadcast title`, matching
+  the naming of the existing `broadcast_sound`, and it accepts the same five keys as `title`: `title`,
+  `subtitle`, `start` (fade in), `duration` (time on screen) and `end` (fade out). They are passed unchanged to
+  the same `MessageSender.sendTitle` the `title` action uses, so timings that already work for `title` on your
+  server work here too. Inventory placeholders and PlaceholderAPI are resolved once, for the player who
+  clicked, so `%player_name%` refers to the clicker and not to each recipient, which is what an announcement
+  wants.
+    - The three timing keys default to `0` when omitted. `title` and `subtitle` have no default: leaving one
+      out sends the literal text `null`, exactly like the existing `title` action, so always write both.
+
+- **New `broadcast_message` action**: sends a list of chat lines to every online player. The type is written
+  `broadcast_message` or `broadcast message`. Keys: `messages` (the lines to send) and `minimessage` /
+  `mini-message` (default `true`; set it to `false` to send each line as it is, through Bukkit's plain
+  `Player#sendMessage`, instead of parsing it as MiniMessage). In every line `%sender%` is replaced by the name
+  of the player who clicked and `%receiver%` by the name of each player receiving it.
+    - It is not interchangeable with the existing `broadcast` action: `broadcast` resolves placeholders again
+      for each recipient and supports a `requirements` list to filter who receives the message, while
+      `broadcast_message` resolves them once for the clicking player and sends that same result to everyone,
+      with only `%receiver%` varying. Use `broadcast` when the text must differ per recipient or be filtered,
+      `broadcast_message` for a plain announcement about the player who clicked.
+    - `messages` must be written as a YAML list. Unlike the `message` action, the singular `message` key and a
+      single inline string are not accepted, and `%player%` substitution and `\n` line splitting are not
+      applied. The existing `broadcast` action behaves the same way on all three points.
+
+## Improvements
+
+- Updated [CurrenciesAPI](https://github.com/GroupeZ-dev/CurrenciesAPI) to version 1.0.15 (required by the
+  currency withdrawal fix documented under Security). The library is shaded and relocated into
+  `fr.maxlego08.menu.hooks.currencies`, so there is nothing to install or update on the server.
+- **Menu name completion now suggests the short name**: `/zmenu open`, `/zmenu giveopenitem`,
+  `/zmenu reload inventory`, `/zmenu dialog open` and `/zmenu bedrock open` only ever completed the fully
+  qualified `plugin:name` form, making you type more than necessary for a name only one plugin provides. A
+  new shared `NameSuggestions` helper now suggests the bare file name when a single plugin provides it, and
+  keeps the qualified form for a name several plugins provide, or as soon as the typed text contains a `:`.
+  The five commands share one implementation instead of five slightly different copies of the same filter.
+- **Clear errors for invalid item option values**: an unrecognised `amount-type` or `lore-type` used to be
+  swallowed with no message at all, so the item silently kept its default (`SET` and `REPLACE`) with nothing
+  in the console to explain why. zMenu now logs an error naming the bad value, the exact key, the file it
+  came from and the list of accepted values, and does the same for an unknown `item-rarity`. An unparsable
+  `color` is reported the same way, and a `LEATHER_` material with no matching armour type now logs a
+  warning saying its `color` is ignored instead of being skipped silently.
+- **A Discord action without a usable webhook now says where it is**: a `discord` or `discord_component`
+  action whose `webhook` is present but empty is skipped with an error naming both the configuration path
+  and the full path of the file it was declared in, instead of the previous
+  `Impossible to load discord action, webhook does not exists: null` line, which said nothing about where
+  the faulty action was. An action with no `webhook` key at all is no longer dropped at load time -
+  `TypedMapAccessor.getString` hands the loader the literal string `null`, which gets past that emptiness
+  check - so it is the background check that now reports it, as a warning naming the file. The `discord`
+  action also stops printing the stack trace of the malformed URL alongside that message.
+- **`/zmenu dumplog` now replies from a server thread**: the upload of `logs/latest.log` to `mclo.gs` still
+  runs asynchronously, but the `DUMPLOG_SUCCESS` and `DUMPLOG_ERROR` replies are now dispatched through
+  `runNextTick` instead of being sent from the upload thread (safer on Folia). The command is otherwise
+  unchanged: it still returns immediately and the log is still uploaded off the main thread.
+
+## Security
+
+- **Ghost GUI / session desynchronization (ZM-01)**: a modified client could hide the inventory screen
+  locally without sending a close packet, leaving the container valid on the server, and then keep clicking
+  it from anywhere on the map, in combat or across dimensions. zMenu now invalidates such sessions:
+    - `VInventory` stores the location of the player when the session is opened (captured on
+      `InventoryOpenEvent`, so every open path is covered). Because an inventory is cloned per opening,
+      the location lives and dies with the session, no external tracking is needed.
+    - New `PlayerMoveEvent` and `PlayerTeleportEvent` handlers close the menu when the player gets further
+      than `max-move-distance` from that location, or changes world.
+    - New `EntityDamageEvent` handler closes the menu when the player takes **or deals** damage.
+    - `VInventoryManager.handleClick` re-checks the distance before dispatching a click, and cancels the
+      event if it fails, so a click that arrives between two move events is still rejected.
+    - New configuration options: `close-on-move` (default `true`), `max-move-distance` (default `2.0`)
+      and `close-on-damage` (default `true`).
+    - `ListenerAdapter` gained `onInventoryOpen`, `onMove`, `onTeleport` and `onDamage` hooks.
+
+- **Anti-dupe bypass on items without ItemMeta (ZM-02)**: `PDCDupeManager` skipped both tagging and
+  detection whenever `ItemStack.hasItemMeta()` returned `false`. That is the case for any item built from
+  a material alone, with no custom name, lore or enchantment, so raw showcase items such as
+  `NETHERITE_INGOT`, `NETHER_STAR`, `TOTEM_OF_UNDYING` or `ENCHANTED_GOLDEN_APPLE` were never marked and
+  survived extraction as fully functional vanilla items.
+    - `protectItem` no longer checks `hasItemMeta()`. It builds the meta through `getItemMeta()`, falling
+      back to `Bukkit.getItemFactory().getItemMeta(Material)`, and writes the persistent data tag on every
+      non-air item.
+    - `isDupeItem` no longer checks `hasItemMeta()` either, so protected raw materials are now correctly
+      detected and removed by `DupeListener`.
+    - Air stacks are short-circuited in `isDupeItem` to avoid building meta for empty slots, which are the
+      most frequent case on the inventory click path.
+    - `NMSDupeManager` (used on servers below 1.14) was already writing raw NBT and is unaffected.
+
+- **Click rate limiter bypass (ZM-03)**: several holes let automated clients push far more clicks through
+  a menu than the configured throttle allows.
+    - `VInventoryManager.handleClick` now calls `event.setCancelled(true)` when a click is rejected by the
+      cooldown. It previously only sent a message and returned, so on an inventory with
+      `disable-click: false` the throttled click still performed its vanilla item move.
+    - `PacketEventClickLimiterListener` no longer clears the player's click record when it receives a
+      `CLOSE_WINDOW` packet. That packet is attacker controlled and was never validated against the open
+      window, so interleaving close and click packets reset the limiter on every single click. The record
+      is now cleared in `onInventoryClose`, which only runs on a genuine server side close. This also
+      removes a possible `NullPointerException` on that path.
+    - `enable-cooldown-click` and `cooldown-click-milliseconds` are now read with an explicit default.
+      The single argument getters return `false` and `0` for a missing key, which silently disabled the
+      click throttle entirely on any config file that predated those options.
+    - Default `cooldown-click-milliseconds` raised from `100` to `250`, and default
+      `packet-event-click-limiter-milliseconds` from `50` to `150`. Existing configuration files keep
+      their current values, only newly generated ones use the new defaults.
+    - `enable-packet-event-click-limiter` is deliberately still `false` by default because it requires the
+      PacketEvents plugin and would do nothing without it. Its documentation in `config.yml` now states
+      that enabling it is strongly recommended on public servers, since it is the only limit applied
+      before a click reaches the server tick.
+    - **Known limitation, not fixed by this change**: raising the cooldown reduces the click rate but does
+      not make a purchase atomic. When an economy plugin commits its withdrawal asynchronously, a client
+      clicking slower than the cooldown can still have several requirement checks evaluate against a
+      balance that has not been debited yet. Closing that hole requires fund reservation in the economy
+      plugin or a dedicated transactional requirement type, and is tracked in the ToDo list.
+
+- **Button click-requirement bypass (ZM-04)**: a button whose `click-requirement` failed still handed
+  out everything it was configured to give.
+    - `Button.handleClickCommon` now runs the button `actions` only when every click-requirement
+      passed. They previously ran unconditionally, right after the requirement loop.
+    - `Button.onClick` now runs the button `commands`, `console-commands` and
+      `console-permission-commands` only when every click-requirement passed. Both the mouse click
+      and the Bedrock click paths are covered.
+    - Multiple click-requirements are now combined with a logical AND. Each requirement used to
+      overwrite the result of the previous one, so with several configured, only the last one to
+      run decided the outcome and a passing requirement could mask an earlier failure. The
+      combination is deliberately non short circuiting: every requirement still runs, so its own
+      `deny` and `success` actions fire exactly as before.
+    - `PerformButton.execute` now runs `console-left-commands` and `console-right-commands` as the
+      console instead of as the player. They were passing the player as the command sender, so a
+      console command bound to a left or right click ran with the player's own permissions and
+      either failed silently or executed as the player. The root `console-commands` were already
+      correct.
+    - `ConsoleCommandAction` now inspects the result of each `Bukkit.dispatchCommand` instead of
+      discarding it, and supports a new `stop-on-failure` option. With it enabled, the first
+      command that reports a failure stops the ones after it, so a chain such as "take the money"
+      followed by "grant the rank" can no longer grant the rank when the charge failed. It is
+      opt-in and defaults to `false` on purpose: Bukkit returns `false` both for a command that
+      does not exist and for a command whose executor returned `false`, which many plugins do just
+      to print their usage, so enabling it blindly could stop a chain that was working.
+    - Note: `close-inventory`, `data` updates, `messages` and `sound` still run regardless of the
+      requirement outcome, as they always have. Buttons already have `deny` actions for the failure
+      path, and changing this would alter the behaviour of existing menus that rely on the message
+      or sound firing on a refused click.
+
+- **Click type requirement bypass, drop key and forged middle click (ZM-07)**: any player could run
+  a button's actions and commands while skipping every one of its click-requirements, with a
+  completely vanilla client, simply by pressing the drop key while hovering the button.
+    - The cause: `all-clicks-type` is documented as the list of click types a menu reacts to, but it
+      was only ever used as the default list for a requirement that does not name its own click
+      types. It was never enforced when dispatching a click. Since that default list contains only
+      `MIDDLE`, `RIGHT`, `LEFT`, `SHIFT_RIGHT` and `SHIFT_LEFT`, a `DROP` click matched no
+      requirement at all, every requirement was skipped as "not for this click type", and the
+      button then granted everything it was configured to give. `CONTROL_DROP` (ctrl + Q) and
+      `NUMBER_KEY` (the hotbar keys) had exactly the same effect.
+    - `InventoryDefault` now only dispatches a click when its type is listed in `all-clicks-type`,
+      or when one of that button's own click-requirements names it explicitly. The second case keeps
+      a requirement written with `click_type: [DROP]` working, since the admin asked for that click
+      type and the button has a requirement covering it.
+    - New `enforce-click-types` option, default `true`, to turn that check off if it breaks a menu
+      that cannot be changed. Leaving it off restores the bypass, and `config.yml` says so.
+    - `ItemButton.setMiddleClick` no longer also binds `ClickType.DROP`. Binding both meant the drop
+      key ran the middle click handler, which menu designers reasonably assume only Creative players
+      can reach. A new `setDropClick` is available when a drop handler is actually wanted.
+    - `ItemButton.onClick` now rejects a middle click from a player who is not in Creative. A vanilla
+      client only sends the clone action in Creative, so a middle click from any other game mode is a
+      forged packet. The whole click is dropped, not just the middle click handler.
+    - Known behaviour change: pressing the drop key or a number key while hovering an item inside a
+      draggable button slot no longer moves that item. Nothing is lost, a normal left click still
+      picks it up and anything left in the slot is still returned when the inventory closes. The
+      slot was deliberately not exempted from the check, because a draggable button that also has
+      actions would otherwise keep the bypass.
+    - Note on a related report finding: a requirement scoped to one click type still does not gate a
+      different click type, and that is intentional. A menu offering "left click to buy, right click
+      to preview for free" relies on it. The fix belongs in the click type allow list above, not in
+      the requirement check.
+
+- **Unbounded component cache, and wrong formatting from cache collisions (ZM-05)**:
+    - `SimpleCache` was a raw `ConcurrentHashMap` with no size limit, no expiry and no eviction. It
+      is keyed by text whose placeholders have already been resolved, so a single lore line
+      containing something like a player name or a balance produced one entry per player and kept
+      it forever. `ComponentMeta.clearCache` was only ever called from the Nexo hook, so on a server
+      without Nexo the cache was never emptied at all, not even by `/zm reload`, and the heap grew
+      for the whole uptime.
+    - `SimpleCache` is now backed by a bounded Guava cache, the same approach already used by
+      `YamlFileCache`, with a maximum size and an idle expiry. New `component-cache` section in
+      `config.yml`: `max-size` (default `10000`) and `expire-minutes` (default `10`). Setting both
+      to `0` restores the previous unbounded behaviour exactly. The expiry matters more than the
+      size limit, because a component built from a player placeholder is usually used once.
+    - The component cache is now also emptied on `/zm reload`. Besides giving the cache a reset
+      point, this fixes names and lore continuing to render from the previous parse after a config
+      file was edited. `MetaUpdater.clearCache` was added as a default no-op so implementations
+      without a cache are unaffected.
+    - **Fixed wrong item formatting caused by cache key collisions.** Item names and lore are cached
+      with a leading formatting reset and an explicit italic state, while plain messages, inventory
+      titles, action bars, titles and book pages are cached without it. Both were stored under the
+      raw text, so an item named the same as a message shared a single entry and whichever was
+      parsed first decided what the other one rendered as. The most visible symptom was an item name
+      that appeared italic, which is the issue the code comments referencing GitHub issue #62
+      claimed was already fixed. Cache keys are now namespaced per shape. Controlled by
+      `component-cache.fix-key-collisions`, default `true`; set it to `false` to restore the old
+      colliding behaviour.
+    - `PlayerUtil.Profile` was a second unbounded, static cache that nothing ever cleared, keyed by
+      skin URL, so a menu using a placeholder in a head URL grew one entry per player. It is now
+      bounded by the same settings.
+    - **Fixed menus showing the wrong head.** `PlayerUtil.Profile` mutated one shared static
+      `PlayerProfile` and then cloned it. Loaders for different URLs can run concurrently, so two
+      lookups could interleave and each walk away with the other one's skin. A fresh profile is now
+      built per lookup.
+    - Removed the redundant second placeholder parse of book pages in `ComponentMeta.openBook`.
+      `OpenBookAction` already resolves the lines before calling it. Contrary to the original report
+      this did **not** create extra cache entries, since the operation is idempotent and produced
+      the same key. What it did cost was a wasted PlaceholderAPI pass per line per open, and it
+      defeated the `` escape: the first pass turns an escaped marker into a literal `%`,
+      which the second pass then resolved as a real placeholder.
+
+- **Buffered player data lost on shutdown, and two data losing races in the write buffer (ZM-06)**:
+    - **The reported disconnect duplication does not reproduce, and the report's explanation of it
+      is wrong.** `ZDataManager` keeps player data in an in-memory map, `loadPlayers` fills it once
+      at startup for every player rather than per join, and nothing removes a player from it when
+      they disconnect (`clearPlayer` has a single caller, the `/zm players clearplayer` command).
+      A player who claims a reward and then kills their connection still has that claim in memory,
+      so it is still blocked when they come back. Disconnecting cannot roll your own data back.
+    - **What was actually broken: there was no flush on shutdown.** `onDisable` closed inventories,
+      restored player inventories, saved the config and cleared caches, but never asked the storage
+      manager to write anything, so stopping or crashing the server within the `batch-task` window
+      discarded up to that many seconds of every player's data. After a restart the old state was
+      loaded back and a one-time reward could be claimed again. `StorageManager.flush` was added as
+      a default no-op and is now called synchronously from `onDisable`, after the inventories are
+      closed so that close-actions writing data are included, and synchronously because the
+      scheduler is being torn down at that point and an async write would never run.
+    - New `flush-storage-on-quit` option, default `true`, writes buffered data when a player
+      disconnects instead of waiting for the next batch. This is not needed to prevent the rollback
+      above, it narrows what an outright crash can lose. Several players leaving at once are
+      coalesced into a single write. Set it to `false` if the extra write per quit is too much for
+      your database, the shutdown flush still runs either way.
+    - **Fixed the batch task destroying data on every cycle.** It drained both caches and then
+      called `clearAll()` on the whole map. Both types were already drained, so the only thing that
+      call could still remove was whatever the main thread had added in between, and those rows were
+      discarded without ever being written. That was a silent data loss window every `batch-task`
+      seconds on a running server, with no restart involved.
+    - **Fixed two races in `TypeSafeCache`.** It was a concurrent map of plain `ArrayList`s, written
+      from the main thread and drained by the async batch task, which left the lists themselves
+      unguarded: draining one while the main thread appended could throw
+      `ConcurrentModificationException`. More seriously, a writer that had already looked its list
+      up could append to it after the drain had taken it out of the map, and that row was then never
+      written at all. Every operation is now guarded by one lock, `drain` removes and returns
+      atomically, `get` returns a snapshot, and `replaceMatching` supersedes a pending row in a
+      single operation instead of a read-modify-write that a drain could split in half. Measured
+      with a concurrency harness: the old code lost roughly 3% of rows under a writer racing a
+      drainer, the new code loses none across 50000 writes.
+    - The `batch-task` default stays at `10`. With a shutdown flush and an optional quit flush in
+      place the interval only matters for an outright crash, and halving it would double the write
+      frequency on every server for a case those flushes already cover.
+
+- **Console and disk flooding from a failing button (ZM-08)**:
+    - **The `IndexOutOfBoundsException` described in the original report is not reachable from
+      zMenu, and its explanation of the cause is wrong.** `onInventoryClick` already returns
+      immediately when `getClickedInventory()` is null, and a raw slot outside the view resolves to
+      no inventory, so an out of range slot never reaches a button. The slot is then only ever used
+      as a `HashMap` key, never as an array or list index, so no bounds error is possible from
+      zMenu's slot handling at all. The stack trace quoted in the report comes from
+      `AbstractContainerMenu.clicked` inside the server's own packet handler, which runs before the
+      Bukkit event is even created, so zMenu is not on that call stack and cannot intervene.
+    - No slot sanitisation was added to `NMSMenuPacketListener`. That class exists only in the
+      1.21 NMS module, so putting security logic there would make the 1.20 modules behave
+      differently, and it has no inventory awareness to sanitise with.
+    - An explicit raw slot range check was added to `onInventoryClick` anyway, as defence in depth.
+      It costs two comparisons, makes the invariant explicit, and means a future change to the null
+      check above cannot quietly widen what reaches a button.
+    - **What was actually fixed: the log flooding the report describes is real, through a different
+      route.** `button.onClick` was dispatched with no exception handling, and neither
+      `handleClick` nor `AdapterListener` caught anything, so any error thrown by a button's actions
+      escaped into the Bukkit event dispatch and printed a full stack trace on every click. A player
+      holding the mouse down on a button with a broken action, a failing placeholder or a throwing
+      addon could fill the console and the log file as fast as they could click. Button dispatch is
+      now wrapped: the click is cancelled, the first failure for that button is logged with its
+      stack trace, and further failures on the same button are muted for
+      `click-error-log-cooldown-seconds` (default `30`, set to `0` to log every occurrence).
+    - Behaviour change worth knowing: an exception used to abort the whole listener adapter loop for
+      that click, so later adapters were skipped. They now run, meaning one broken button no longer
+      silently disables other parts of the plugin for that click.
+
+- **Menus could hand out a reward when the payment failed (residual part of ZM-03)**: a shop button
+  is configured as a `money` requirement that checks the balance, then a `withdraw` action that
+  takes it, then an action that gives the reward. Two things were wrong with that chain.
+    - `CurrencyWithdrawAction` called the plain `withdraw`, which does not check whether the player
+      can afford the amount. Most economy plugins either drive the balance negative or silently
+      clamp it to zero, and the return value told the caller nothing. It now calls
+      `withdrawIfSufficient`, which checks the balance and applies the debit as one operation and
+      reports the outcome. Requires CurrenciesAPI 1.0.15 or later.
+    - **Nothing in zMenu could stop a list of actions part way through**, so the action giving the
+      reward ran whether or not the money had actually been taken. Actions can now report that what
+      follows them must not run:
+        - New `ActionResult` enum, and `Action.preExecuteChain` / `Action.executeChain` alongside the
+          existing methods. `execute` stays an abstract void and `preExecute` still works, so every
+          existing action and every third party addon compiles and behaves exactly as before.
+        - Every place that runs a list of actions now stops on `ActionResult.STOP`: button actions,
+          requirement and permissible deny and success actions, inventory open and close actions,
+          the Bedrock open and close actions, command actions, mechanic actions, and an action's own
+          deny-chance actions.
+        - An action with a `delay` always reports `CONTINUE`, because it has not run yet when the
+          list continues. Do not put a delay on an action whose outcome is meant to gate the ones
+          after it.
+    - A failed payment now stops the rest of the action list and tells the player. Two new messages:
+      `CURRENCY_NOT_ENOUGH` and `CURRENCY_ERROR`. An `UNSUPPORTED` result, meaning the economy
+      cannot report whether the player could afford it, is treated as a failure and logged, because
+      the alternative is giving the reward away for free.
+    - A misconfigured, non numeric `amount` also stops the chain instead of being treated as zero.
+    - `ZCurrencyPermissible` is deliberately unchanged. It is evaluated when a button is rendered,
+      through `view_requirement`, so it must only ever read the balance and never debit it.
+    - `CurrenciesAPI.init(this)` is called on enable so the library can schedule work back onto the
+      main thread for currencies that are not thread safe, such as `ITEM`, `LEVEL` and `EXPERIENCE`.
+    - **Still only as safe as the backend.** Vault, PlayerPoints, zEssentials, RedisEconomy,
+      ExcellentEconomy and VotingPlugin can refuse a withdrawal themselves, so the check and the
+      debit are genuinely indivisible, and RedisEconomy and ExcellentEconomy hold that guarantee
+      across every server sharing the economy. For CoinsEngine, EcoBits, BeastTokens, RoyaleEconomy
+      and the Elemental currencies the library has to emulate it, which protects one server against
+      racing itself but cannot protect a network sharing one database. `TransactionResult.isAtomic`
+      and `Currencies.supportsAtomicWithdraw` report which case a currency falls into.
+
+## Fixes
+
+- **A `SWITCH` button comparison could stop the whole menu from opening**: the `>=`, `<=`, `>` and `<`
+  cases of a `SWITCH` button parsed both sides with `Integer.parseInt`, and the `NumberFormatException`
+  it throws escaped `ZSwitchButton.getDisplayButton` into the button loop of `InventoryDefault`. Nothing
+  catches it there (`VInventoryManager` only catches `InventoryOpenException`), so the remaining buttons
+  were never placed, `player.openInventory` was never reached, and the console printed a stack trace while
+  the player was left with no menu. Anything that is not a whole number triggered it: a `key` placeholder
+  returning a decimal balance such as `1000.5` or an empty string, the raw `%placeholder%` coming back
+  unresolved because the plugin providing it is not installed, or a case simply written `">= 10"` with a
+  space after the operator.
+    - Both sides are now compared as decimals, spaces are trimmed and a comma is accepted as the decimal
+      separator, so `">= 10"`, `">=10.5"` and `">=10,5"` all work, and a placeholder returning `1000.5` is
+      compared correctly instead of throwing. This matches how placeholder requirements already read their
+      numbers. A value that uses `,` as a thousands separator is read as a decimal point, so `1,000` counts
+      as `1`: compare against a raw, unformatted placeholder.
+    - A side that is still not a number no longer throws, it simply never matches. The switch moves on to
+      the next case and falls back to the button's own `item` when none of them match, so a missing
+      placeholder plugin now costs you the default icon rather than the whole inventory.
+    - Cases without a comparison operator are unchanged and are still an exact string comparison.
+- Fixed a menu failing to open when an item used `material: armor:<slot>` with a slot name that does not
+  exist, such as `armor:HELMET` or `armor:BOOTS`: `ArmorLoader` passed the value straight to
+  `EquipmentSlot.valueOf`, and the resulting `IllegalArgumentException` was never caught, so the menu was
+  abandoned mid-render with only a stack trace that named neither the file nor the item. The slot is now
+  validated: an invalid value is logged as an error with the configuration path and the list of accepted
+  slots, and the item falls back to `AIR` so the rest of the menu still opens. The value is also upper-cased
+  and trimmed, so `armor:head` now behaves like `armor:HEAD`.
+- **A mistyped `datas` type no longer silently removes a button**: the `type` of a button `datas` entry
+  (`SET`, `ADD`, `SUBTRACT`, `REMOVE`) was resolved with a strict `valueOf`. A typo, or simply a lowercase
+  `type: add`, threw while the button was being built, and the button was then dropped from the inventory
+  with no message at all unless `enable-debug: true` was set. In a `patterns/` file, where button loading is
+  not wrapped in a try/catch, the same error aborted the pattern folder, so every pattern after the faulty
+  one stopped loading.
+    - The value is now uppercased before being resolved, so `type: add` and `type: ADD` are equivalent.
+    - An unknown value logs an error naming the exact configuration path and listing the accepted types, and
+      falls back to `SET` so the button still loads.
+- **A non-numeric player data value no longer cancels the whole click**: an `add` or `subtract` entry in a
+  button `datas` section, or a `data` action, whose `value` did not resolve to a whole number - an unresolved
+  `%placeholder%`, an empty string, or a decimal such as `1.0` - threw out of `ZActionPlayerData`. Any entry
+  using `math: true` threw the same way when its expression could not be evaluated. `datas` entries run
+  at the very top of a button click, before the messages, the sound, the click-requirements, the actions
+  and the commands, so the rest of the click was lost along with the write. The same failure inside a
+  `data` action aborted the actions queued after it.
+    - The value now goes through a guarded conversion: an unusable value logs a single error line naming the
+      value and the data key, that one entry is skipped, and the rest of the click runs normally.
+    - Without `math`, `add` and `subtract` now also accept a decimal value, a comma as the decimal separator
+      and surrounding spaces (`1.0`, `1,5`, ` 2 `), which placeholders commonly return. The amount is
+      truncated to a whole number, since `Data.add` and `Data.remove` work on whole numbers.
+    - With `math: true`, an expression that cannot be evaluated is logged and the raw value is stored as is,
+      instead of the click being aborted.
+- **`item-rarity` and four custom model data aliases were read from the wrong place in the file**:
+  `MenuItemStackLoader` looked those keys up at the root of the YAML file instead of under the item's own
+  path. `item-rarity` written on an item was therefore silently ignored (on 1.21+, the only versions where
+  it is applied), and the `model_data`, `custom-model-id`, `custom-model-data` and `model-data` spellings of
+  the custom model data option never reached the item either — only `modelID`, `model-id`, `modelId`,
+  `customModelId` and `customModelData` worked. Conversely, a file that happened to declare one of those
+  keys at its root applied it to every item it contained. All of them are now read from the item's path.
+- **An out-of-range colour or an unknown `item-rarity` no longer breaks the item that uses it**:
+  `Color.fromRGB` and `Color.fromARGB` reject any channel outside `0-255` and `MenuItemRarity.valueOf`
+  rejects an unknown value, and neither rejection was caught. A potion item written with `color: 300,0,0`
+  threw out of the item loader: inside an inventory the whole button was dropped, with nothing in the
+  console unless `enable-debug: true`, and inside a `patterns/` or `items/` file the exception escaped the
+  folder walk and aborted everything still to be loaded. Both are now caught and logged with the offending
+  value, the key and the file, and the item keeps its default.
+- **Colours written with spaces after the commas now work**: `color: 160, 101, 64` failed to parse and
+  silently fell back to the default — the brown leather tint, or no tint at all on a potion. Each channel is
+  now trimmed before being parsed, so the spacing no longer matters.
+- Fixed the `itemModel` item comparison never matching: `ItemModelSimilar` compared the two item model keys
+  with `==` instead of `equals`. `NamespacedKey` is a regular object and zMenu builds a fresh one every time
+  it renders an item, so two items carrying the same `item-model` were never seen as similar, while any two
+  items carrying **no** item model were seen as identical. Every `type: itemModel` check was affected, on the
+  Minecraft 1.21.4+ servers where that strategy is registered: an inventory `open-with-item`, a
+  `check-inventory` requirement and the `check-item` of an `item_drag` button. The keys are now compared
+  with `Objects.equals`, and an item with no `ItemMeta`, such as an `AIR` stack coming from a misconfigured
+  item, is handled instead of throwing a `NullPointerException`.
+- **Two plugins shipping a menu with the same file name no longer hide each other**: `ZInventoryManager`
+  kept a single inventory per short name, so the last file loaded silently replaced the other one, and
+  which of the two `/zmenu open <name>`, an `inventory` action or an `inventory` button opened depended on
+  the load order. Deleting or reloading either one then removed the shared entry, leaving the survivor
+  unreachable by its short name until its own plugin registered it again.
+    - Every inventory claiming a name is now kept. A name used on its own resolves deterministically:
+      zMenu's own inventory wins, otherwise the one from the alphabetically first plugin name. The
+      `plugin:name` form still selects exactly one.
+    - A warning is now logged when a name is claimed by several plugins, listing every owner, naming the
+      one the short form will open and pointing at the `plugin:name` form to reach the others.
+    - `deleteInventory` and `deleteInventories` now only drop their own entries. Reloading a single menu
+      with `/zmenu reload inventory <name>`, or a plugin unregistering its menus through the API, no longer
+      takes another plugin's menu of the same name down with it.
+- **Dialogs and Bedrock menus are now found whatever the case of their name**: `ZDialogManager` and
+  `ZBedrockManager` compared names with `equals`, so a name that did not match the file name or the menu's
+  configured `name` character for character was reported as missing.
+    - `/zmenu dialog open <name>` and `/zmenu bedrock open <name>`, and the `dialog` and `bedrock` actions,
+      now compare with `equalsIgnoreCase`, so `MyDialog` finds the dialog declared in `mydialog.yml`.
+    - **The `plugin:name` form offered by tab completion could not be opened.** The suggested entries were
+      lowercased (`zmenu:example`), while `getDialog(String, String)` and `getBedrockInventory(String,
+      String)` looked the plugin up by its exact name (`zMenu`) as a map key, so the command answered "not
+      found" for a name it had just suggested. Both now resolve the plugin part through
+      `getPluginIgnoreCase`, as inventories already did. A `dialog` or `bedrock` action written with
+      `plugin: zmenu` was failing the same way.
+    - `getDialog(Plugin, name)` and `getBedrockInventory(Plugin, name)` now also accept the menu's
+      configured `name` and not only its file name, so both lookup forms behave the same way.
+- **Discord webhook checks no longer freeze the server or silently disable the action**: the `discord` and
+  `discord_component` actions verified their `webhook` with a blocking HTTP request while the action was
+  loaded, so every menu, command or item using an unreachable or slow webhook stalled the loading thread -
+  the main thread on startup and on `/zm reload` - for up to 10 seconds per distinct URL (5 second connect
+  and 5 second read timeouts). On top of that, a webhook that did not answer with `200` made the loader drop
+  the action entirely, and the failure was cached for the whole lifetime of the server, so a webhook that was
+  unreachable once - Discord down, or the network not ready yet while the server was booting - stayed dead
+  until a full restart, `/zm reload` did not retry it.
+    - The action is now built whatever the check says, and the webhook is verified in the background by the
+      new `DiscordWebhookChecker`. A webhook that does not answer only logs a warning naming the file it was
+      declared in, instead of removing the action from the menu.
+    - Only successful checks are remembered, so a webhook that failed once is checked again on the next
+      reload, and the same URL is never checked twice at the same time.
+    - The HTTP connection is now closed after the check, and the shared result cache is thread-safe.
+- Fixed a `ClassCastException` when a zMenu message was sent to a sender that is neither a player nor the
+  console: `MessageUtils.message` cast every non-console sender to `Player`, so command blocks and the RCON
+  console crashed instead of receiving the message. With the default `enable-open-message: true`,
+  `/zmenu open <inventory> <player>` run from a command block failed on the confirmation message and never
+  opened the menu. Non-player senders now receive the same prefixed chat output the console already got.
+- Fixed a single literal `%` marking a value as a placeholder expression. `Resolvable.isExpression` returned
+  `true` as soon as the text contained one `%`, so a component value such as `50% off` was classified as
+  dynamic and pushed through the local placeholders and PlaceholderAPI again on every render for every
+  player. A matching pair is now required, so the value is kept as a constant and resolved once when the
+  item is loaded. It covers every value read through `ResolvableString` or `ResolvableComponent`: `lore`,
+  `custom-name`, the two book content components, the `custom-name` of `potion-contents` and a `string`
+  persistent-data entry. Real placeholders are unaffected, and the `item-name` component keeps the old
+  behaviour because it does not go through `isExpression`.
+- Fixed `only-refresh-button` pagination clearing slots in the wrong container. `PaginationButton` called
+  `addItem(slot, air, isPlayerInventory())`, which binds to the overload whose last argument is the
+  anti-dupe flag, not the container, so the slots were always cleared in the menu and never in the player
+  inventory. A paginate button placed in the player's inventory (reachable only through the API, via
+  `Button.setPlayerInventory(true)`) therefore kept the previous page's items in every slot the new page
+  did not fill, and blanked the same-numbered menu slots instead, dropping their click handler until the
+  next full refresh. Ordinary in-menu pagination was unaffected: there the misplaced argument only skipped
+  anti-dupe tagging on an `AIR` stack, which is ignored anyway.
+- Fixed slot ranges written with spaces around the hyphen being silently ignored: a `slots` entry such as
+  `0 - 8` failed to parse and added no slot at all, so the button fell back to the single `slot` value of
+  its definition (default `0`) instead of covering the range. `ButtonLoader.loadSlot` now trims both bounds
+  of a range, and single slot values, before parsing them.
+    - A range written backwards now behaves like the same range written the right way round: `8-0` covers
+      slots `0` to `8`, where it used to drop both of its bounds and cover only `1` to `7`. A range written
+      normally is unaffected, and still covers both of its bounds.
+
+## Internal Changes
+
+- **File handles in the JSON storage layer**: `DiscUtils` and `PlayerDataLoader` now open their streams
+  with try-with-resources, so a failed read or write no longer leaves the file open. This affects
+  `live-sync.json`, saved through `Persist`, and `players.json`, read by `/zmenu players convert`.
+- `DiscUtils.readBytes` now stops at the end of the stream instead of moving its read offset backwards,
+  which could throw an `IndexOutOfBoundsException` when a file shrank between its size being measured and
+  being read.
+- The anti-dupe inventory click handler now verifies that the clicker is a player before casting instead of
+  casting blind, so a non-player clicker is ignored rather than throwing a `ClassCastException` out of
+  `DupeListener.onInventoryClick`.
+
+# 1.1.1.8
+
+## New Features
+
+- **Fallback inventories for dialogs on older clients**: dialogs can now define a `fallback-inventory`
+  (`name`, optional `plugin`, and optional `page`). When a player's client is below Minecraft 1.21.6 and
+  cannot render dialogs, zMenu opens the configured chest inventory instead, or sends a dedicated message
+  when no fallback is available. Client versions are detected through ViaVersion, ProtocolSupport, or
+  Paper's handshake protocol.
+- **Client version API**: added `ClientVersionManager`, `ClientVersionProvider`, and protocol-to-Minecraft
+  version mapping to the public API, allowing integrations to query a player's real client version and
+  register additional providers.
+- **Placeholder-aware `take_item` amounts**: the `amount` field of the `take_item` / `take-item` action now
+  accepts placeholders and is resolved for the player when the action runs. It still defaults to `1`.
+- **UUID targets in placeholder requirements**: `target-player` can now resolve to either a player name or a
+  UUID when evaluating a placeholder requirement for another player.
+
+## Improvements
+
+- **Updated zItems support**: migrated the material loader to the latest zItems registry API. zItems is now
+  loaded after zMenu to avoid Paper dependency cycles, while older incompatible zItems APIs fail gracefully
+  instead of breaking inventory loading.
+- **Dialog management hardening**: dialog registries and active-dialog tracking are now thread-safe, the API
+  returns the actual loaded dialog names, and dialog names are removed correctly during reloads.
+- **Error reporting**: exceptions are now routed through the zMenu logger with the plugin prefix and complete
+  cause chain instead of being printed directly to standard error.
+
+## Fixes
+
+- Fixed active dialog data not being cleared when a player disconnects, which could leak entries and restore
+  a stale dialog after reconnecting.
+- Fixed plugin shutdown throwing an additional `NullPointerException` when startup failed before the website
+  manager was initialized.
+- Fixed Minecraft version parsing accepting later numeric fragments after a non-numeric version segment.
+
+## Internal Changes
+
+- Added anonymous usage metrics through FastStats, with proper startup and shutdown lifecycle handling.
+
+# 1.1.1.7
+
+## New Features
+
+- **Live sync for button patterns**: the website can now push button patterns as well as inventories. A new
+  `pattern.sync` event installs a pattern sent from the Pattern Studio, and an inventory that depends on
+  patterns now downloads and installs **all of its patterns first** (sequentially, so the inventory never
+  reloads on a half-updated set) before being reloaded. Patterns are written into `patterns/` (or into
+  another plugin's `patterns/` folder when the website sends a `plugin_name`), with the same guarantees as
+  inventories: SHA-256 verification, size limit, path sanitisation, `BUTTON` type validation, atomic write
+  with a `.bak` backup and rollback on a load failure.
+- **New requirement `item-rule`**: check the item a player is holding or wearing against a zMenu rule.
+  Configure it with `rule` (any rule supported by the rule engine), `item-source` (`HAND`, `OFF_HAND`,
+  `HELMET`, `CHESTPLATE`, `LEGGINGS`, `BOOTS` or `INVENTORY`), `amount` (minimum quantity, counted across
+  the whole inventory when `item-source: INVENTORY`) and the usual `deny` / `success` actions.
+- **Give an item on the first join of a world**: custom items can use `give-first-world-join` in their
+  `mechanics.itemjoin` section (a single world name or a list). The item is given the first time the player enters
+  that world - on join or on a world change - and the visited worlds are stored in database (new
+  `first_world_join` table, created automatically), so the item is never given twice.
+- **Localized dialog messages**: `dialog-plain-message-body` now accepts a `localized-messages` section
+  with one message list per locale, used when the client's language matches.
+
+## Improvements
+
+- Updated [CurrenciesAPI](https://github.com/GroupeZ-dev/CurrenciesAPI) to version 1.0.14 (fixed the `ExcellentEconomy` enum name, old usage deprecated)
+- **All economy and item plugins are now declared in `paper-plugin.yml`** as optional dependencies (Vault,
+  PlayerPoints, BeastTokens, CoinsEngine, EcoBits, ElementalTokens, ElementalGems, ExcellentEconomy,
+  RedisEconomy, RoyaleEconomy, VotingPlugin, zEssentials, plus CraftEngine, Denizen, Shopkeepers, zItems,
+  eco, Nexo, NextGens, Nova), so their classes are always visible to zMenu when they are installed - and
+  none of them is required to start.
+- **Commands accept a target player again in a uniform way**: player arguments no longer use a raw string
+  argument (a name with a space could break the parsing) and every command resolves its target through the
+  same helper - selector, online player or offline player - falling back to the command sender.
+  `/zmenu players convert` can now be run from the console / on another player.
+- `/zmenu save <name> [type]`: the `type` argument is now a real enum argument (`YML` / `BASE64`) with
+  proper completion, and it is **optional** - it defaults to `BASE64`.
+- **CraftEngine items are now built with the player context**, so per-player CraftEngine items resolve
+  correctly inside menus.
+- **PacketEvents listeners are thread-safe**: animation and click-limiter data now use `ConcurrentHashMap`,
+  and inventory tasks are scheduled on the player's region instead of resolving a container location
+  (safer on Folia).
+- **More logs to debug items**: eco item lookup failures are logged in debug mode, and an unknown mechanic
+  now reports the file it comes from and the list of available mechanics.
+
+## Fixes
+
+- Fixed the on-click mechanic never running: `OnClickMechanicFactory` was not registered in the item manager.
+- Fixed `clearInventory: true` leaving the player inventory untouched: the saved items are now actually
+  removed after being cloned, and only the 36 storage slots are processed (armor and off-hand are left alone).
+- Fixed color values not being clamped in `ColorUtils` (and a potential `NullPointerException`).
+- Fixed the offline player cache never being uninstalled on disable.
+- Cooldowns now clean up their expired entries and drop empty maps instead of growing forever.
+
+# 1.1.1.6
+
+## New Features
+
+- Added **live sync** with the website (Minecraft Inventory Builder): link your server with `/zmenu login`
+  (no argument starts a secure device-authorization flow - approve the shown code on the website), open the
+  live link with `/zmenu connect`, and close it with `/zmenu disconnect`. Once connected, clicking
+  "Sync to Server" on the web builder reloads the inventory on your server live, with no restart.
+    - **Auto-connect at startup**: a server that is already linked reopens its live channel by itself
+      10 seconds after the plugin enables - `/zmenu website connect` is no longer needed after a restart.
+      Set `enable-website-auto-connect: false` in `config.yml` to keep opening it by hand.
+    - **Open the menu in game after a sync**: when the option is enabled on the website, the server opens
+      the freshly reloaded inventory for the configured player (nothing happens if they are offline - the
+      console says so). The player name is read from the authenticated download response
+      (`X-Zmenu-Open-For`), never from the relay notification, which only carries an `open` flag.
+- Added permissions `zmenu.connect` and `zmenu.disconnect`.
+- **Custom item `on-click` mechanic**: custom items (defined in `items/*.yml`) can now run zMenu actions when their holder left/right-clicks. Configure it under `mechanics.on-click` with `cooldown` (seconds), `cancel-event`, `click-target` (`air` / `block` / `both`), `click-types` (`LEFT`, `RIGHT`, `SHIFT_LEFT`, `SHIFT_RIGHT`), `click-requirements` and `actions`.
+- **Dynamic dialog buttons**: two new dialog button types repeat a body or input element over a numeric range — `dialog-dynamic-body-button` (inside `body:`) and `dialog-dynamic-input-button` (inside `inputs:`), each with placeholder-aware `start` / `end` bounds. The `%index%` placeholder resolves to the current iteration, and each generated input value is available as `%<button-name>_<index>%` (e.g. `%my_input_1%`). See `dialogs/dynamic-dialog-example.yml`.
+- **Dynamic Bedrock buttons**: `bedrock-dynamic-input-button` (CUSTOM forms) and `bedrock-dynamic-button` (SIMPLE forms) repeat an input/button over `start` / `end`, exposing `%index%` and per-index response placeholders (e.g. `%dynamic_input_1%`, `%dynamic_toggle_1%`). See `bedrock/dynamic-bedrock-example.yml` and `bedrock/dynamic-simple-bedrock-example.yml`.
+- **Pluggable dialog action types**: dialog action buttons (yes/no, notice, multi-action, server-links) now accept a `type:` field — `custom-click` (default, runs zMenu `actions:`) or `static` for native client actions via `static-type:` (`OPEN_URL`, `OPEN_FILE`, `RUN_COMMAND`, `SUGGEST_COMMAND`, `COPY_TO_CLIPBOARD`).
+- **Dialog action limits**: dialog action buttons support `usage-limit` (maximum activations) and `duration-limit` — either plain seconds or a `{ value, type }` section with a `TimeUnit` (`SECONDS`, `MINUTES`, ...) — plus `enable-placeholders`.
+- **Placeholders inside item components**: item component fields now accept `%placeholder%` values, resolved per viewer at build time (local placeholders + PlaceholderAPI) through a new `Resolvable` framework. `dyed-color` and other color / enum / number / string fields can now be dynamic.
+- **New item components**: `tropical-fish/pattern`, `wolf/sound-variant`, `can-break`, `can-place-on`, and a now-functional `dye` component (Paper 1.26.1+).
+
+## Improvements
+
+- **Unique permissions for every command**: refactored all commands to use distinct permission nodes — no two commands share the same permission anymore.
+  - Added `zmenu.open.main.menu` for `/zmenu openMainMenu` (was sharing `zmenu.open`).
+  - Added `zmenu.dialog` for `/zmenu dialogs`, and `zmenu.open.dialog.config` for `/zmenu dialogs config`.
+  - Split `zmenu.players` into 9 granular permissions: `zmenu.players.add`, `zmenu.players.clear.all`, `zmenu.players.clear.player`, `zmenu.players.convert`, `zmenu.players.get`, `zmenu.players.keys`, `zmenu.players.remove`, `zmenu.players.remove.all`, `zmenu.players.subtract`.
+
+- `/zmenu login <token>` still works as before (legacy token paste); running `/zmenu login` with no argument
+  now links the server for live sync.
+- Live sync now sends a stable, persistent `server_id` (stored in `live-sync.json`, kept across re-links) at
+  pairing time, so the website recognises the same server across re-pairings and never creates duplicate
+  linked-server entries.
+- Synced inventories are now written into a **subfolder** of `inventories/` mirroring the inventory's folder
+  on the website (e.g. `inventories/Shop/Weapons/menu.yml`). The subfolder path is taken from the sync
+  notification and sanitised (segments only, no `..`/absolute/backslash) before any file is written.
+- New command **`/zmenu unlink`** (perm `zmenu.unlink`): force-detach this server from the website - it
+  revokes the link on the site, and clears the local `live-sync.json` credential **even if** the site call
+  fails (so a down/unreachable website never leaves a stuck link).
+- `/zmenu connect` now first **verifies the link is still valid** with the website and **refreshes** the
+  stored relay url / connection id (so a changed `ZMENU_WS_URL` is picked up automatically); a revoked link
+  is detected and cleared up front.
+- **All integrations are now optional**: every integration plugin (Oraxen, ItemsAdder, PlaceholderAPI, LuckPerms, Geyser/Floodgate, MythicMobs, MMOItems, ...) is declared as a soft dependency in `paper-plugin.yml` — none are required for zMenu to start.
+- **Expanded color parsing**: color fields (`dyed-color`, `map-color`, firework `colors`/`fade_colors`, `custom-model-data` colors, `potion-contents` custom color, collar colors, ...) now also accept `"r,g,b"` and `"r,g,b,a"` strings (with or without spaces, values clamped 0–255) in addition to hex strings and RGB(A) lists.
+- **Backward-compatible dialog action buttons**: the new nested form (`<key>.label`, `<key>.tooltip`, `<key>.width`, `<key>.actions`, `<key>.type`) falls back to the old flat keys (`yes-text`, `notice.text`, `multi-actions.<key>.text`, ...), so existing dialog files keep working.
+- **Bedrock text input** now accepts both `bedrock_text` and `bedrock_text_input`.
+- **Page placeholders** (`%page%`, `%maxPage%`, `%max-page%`) now resolve everywhere inside an inventory (buttons, names, lore), not only in the title.
+- **DeluxeMenu import** (`zmenuconvert`) now honours DeluxeMenu's `inventory_type` (CHEST, HOPPER, DISPENSER, ...), rejects unsupported types with a clear message, and only enforces the multiple-of-9 size rule on CHEST inventories.
+- **Maven Central mirror fallback**: zMenu downloads its runtime libraries via Paper's library loader on startup; a mirror fallback (`PAPER_DEFAULT_CENTRAL_REPOSITORY` env var → `org.bukkit.plugin.java.LibraryLoader.centralURL` system property → Google mirror) keeps this working on older Paper builds and restricted networks.
+- Players can now safely type `%` inside dialog/chat answers (it is no longer misinterpreted as a placeholder).
+
+## Changes
+
+- **zMenu is now Paper-only.** The Spigot `plugin.yml` has been removed in favour of `paper-plugin.yml` (Paper `bootstrapper` + `loader`); zMenu **no longer runs on Spigot** — Paper, a Paper fork (Purpur/Pufferfish) or Folia is required. Work has also started on Paper 26+ support.
+- **Item component keys normalized to kebab-case** (no alias kept — existing configs must be updated): `custom_name` → `custom-name`, `death_protection` → `death-protection`, `intangible_projectile` → `intangible-projectile`, `map_decorations` → `map-decorations`, `note_block_sound` → `note-block-sound`, `pot_decorations` → `pot-decorations`, `provides_banner_patterns` → `provides-banner-patterns`, `provides_trim_material` → `provides-trim-material`, `tropical_fish/base_color` → `tropical-fish/base-color`, `tropical_fish/pattern_color` → `tropical-fish/pattern-color`.
+- **API**: `InventoryManager` methods now return/accept `ContainerInventory` instead of Bukkit `Inventory`; plugins compiling against `zmenu-api` must update.
+
+## Security
+
+- The live link is end-to-end safe: the WebSocket carries only `{inventory_id, file_name, hash}` - the YAML
+  is pulled over the authenticated HTTPS API and its SHA-256 hash is verified before being applied. The file
+  is written atomically with a `.bak` backup and rolled back on a parse/reload failure; all network I/O runs
+  off the main thread and the reload happens on the main thread. The scoped server token is stored in
+  `live-sync.json` and never printed.
+
+## Fixes
+
+- Fixed `/zmenu disconnect` using the wrong permission node (`zmenu.description` → `zmenu.disconnect`).
+- Live sync now **stays connected** after `/zmenu connect`: it auto-reconnects (with backoff) after a relay
+  idle-eviction, relay restart or network blip, until you run `/zmenu disconnect` or the token is revoked.
+  Previously the link could drop silently and "Sync to Server" on the website would report
+  "server not connected" even though the operator believed the server was still connected.
+- Fixed synced inventories failing to write on Windows (`the file is used by another process`): the
+  downloaded temp file's stream was still open when the atomic move ran. The stream is now closed before
+  the file is applied.
+- Fixed a same-named inventory in two different folders reloading the **wrong** file (zMenu indexes
+  inventories by bare name): the synced inventory is now resolved by its actual file path. Concurrent
+  syncs of same-named inventories also no longer share a temp file.
+- Fixed dialog config permission : https://github.com/Maxlego08/zMenu/issues/252
+- Fixed `width` being ignored inside `dialog_plain_message`.
+- Fixed translated inventory/item names (`translatedName` / `translated-name`) never being applied.
+- Fixed player-selector arguments (`@p`, `@a`, ...) in `/zmenu open`, `giveitem`, `giveopenitem`, `openmainmenu` and the Bedrock/dialog open commands.
+- Fixed commands sometimes not registering, and allowed `:` inside inventory names/arguments.
+- Fixed a `ConcurrentModificationException` while flushing player data ([#246](https://github.com/Maxlego08/zMenu/issues/246)).
+- Fixed the anvil inventory registration to only load on Minecraft 1.21+.
+- Fixed placeholder-driven commands being split in the wrong order in player-command actions.
+- Fixed button post-processing only applying to the last button of an `else` chain instead of every button.
+- Fixed the legacy (pre-1.13) material-by-ID mapping never being built.
+- Fixed the MythicMobs hook activating even when MythicMobs was installed but disabled.
+- Fixed font image handling for optional plugins ([#250](https://github.com/Maxlego08/zMenu/issues/250)).
+- Fixed a crash on older Paper builds where JDK 25 bytecode could not be read (ASM), and a build `StackOverflowError` during POM resolution.
+- Fixed version parsing for Paper 26+ build strings (e.g. `26.2.build.12-alpha`).
+
+**Internal Changes**:
+
+- Reworked the Dialog and Bedrock systems to support custom, editable and dynamic buttons; dialog and Bedrock button/input loaders are now discovered by reflection.
+- New reflection-based auto-loading annotations: `@AutoButtonLoader`, `@AutoCommandArgumentValidator`, `@AutoFontImage`, `@AutoItemStackSimilar`, and `@RequireSupport` (gates loading on `DIALOG` / `BEDROCK_INVENTORY` support being active).
+- Dialog API split into specialized interfaces (`ConfirmationDialogInventory`, `NoticeDialogInventory`, `MultiActionDialogInventory`, `ServerLinksDialogInventory`); ~40 type-specific methods on `DialogInventory` were deprecated. A new `ConfigFieldProcessor` extension point lets integrators customize the `/zmenu dialogs config` editor.
+- Bedrock inputs now build Geyser Cumulus components directly; new `bedrock/inputs` and `bedrock/components` API packages; dialog body/input types moved into `body/` and `inputs/` subpackages (import paths changed for API consumers).
+- New `Resolvable` framework backing placeholder-aware component fields; `PotionContentsComponent` rewritten on Paper `DataComponentTypes`; `ResolvableRegistry` now uses Bukkit `RegistryKey`; entity variant loaders reorganized into per-entity packages; the Spigot/Paper `custom-model-data` loaders were merged into a single dynamic loader.
+- New `ResolvablePersistentDataEntry` / `ResolvableContainerSlot` API building blocks (typed, placeholder-resolvable persistent-data entries using a `value@type` syntax).
+- Commands migrated to the `paper-dispatch` library.
+- `openInventory` now runs on the entity scheduler (Folia-safe); hardened packet-handler injection.
+- Migrated compile/test to Paper 26 with a MockBukkit-based mock-server test harness; Gradle wrapper updated to 9.6.1.
+
+# 1.1.1.5
+
+## New Features
+
+- **Player Inventory Placeholders**: Added `%zmenu_player_empty_slots%` to get the number of free slots in the player's inventory, and `%zmenu_player_item_count_<MATERIAL>%` to count the total amount of a specific item. These placeholders work even when the bottom inventory is hidden with `clear-inventory: true`, allowing shop menus to check if the player has enough space before purchasing.
+- **Custom Commands**: Add a new field `actions-requirements` for custom commands, allowing you to specify requirements that must be met for the command's actions to execute. This provides more control over argument conditions and enhances command functionality.
+- **Anvil Inventory Support**: Added a new `ANVIL` inventory type, with `rename-requirements` to validate the text entered by the player before running the rename actions. Inventory types are now resolved through a dedicated `InventoryType` registry (currently `ANVIL` and `CHEST`), making it easier to add new container types in the future.
+- **Item Rules System**: Added a flexible item-matching system configurable through a `rule` section. Built-in rule types: `material`, `material-contains`, `material-prefix`, `material-suffix`, `name`, `lore`, `tag`, `custom-model-data`, and the `and` / `or` composites to combine several rules. Plugin-specific item rules (match by item id, supporting wildcards and `ignore-case`) are available for CraftEngine, Denizen, Eco, ExecutableBlocks, ExecutableItems, HeadDatabase, ItemsAdder, MMOItems, Nexo, NextGens, Nova, Oraxen and SlimeFun. The `item_drag` button now accepts a `rule` section to validate which items a player is allowed to drop.
+- **New Action `set_item`** (`set_item` / `set-item`): place an item in one or several inventory slots (menu or player inventory via `in-player-inventory: true`), with `dupe-protection` enabled by default.
+- **New Action `take_item`** (`take_item` / `take-item`): remove a configurable `amount` of matching items from the player's inventory, with `verification: SIMILAR` (default) or `MODELID` to control how items are matched.
+- **New Action `refresh_slot`** (`refresh_slot` / `refresh-slot`): refresh only the given `slots` (menu or player inventory) without rebuilding the whole inventory.
+- **Check Inventory Requirement** (`check-inventory` permissible): verify that a given `slot` contains a specific item (or that the player owns it), with `success` and `deny` actions and a configurable comparison `type`.
+- **Denizen Support**: Added a new hook for Denizen, allowing Denizen items to be matched through the item rules system (`denizen` rule type).
+
+## Bug Fixes
+
+- **Clear Inventory Session Items**: Fixed a bug where items given to the player during a menu session (e.g., via shop purchase actions) were lost when closing a menu with `clear-inventory: true`. Session items are now collected before restoring the original inventory and properly restored afterward.
+- **ItemGiveAction Inventory Update**: Added `player.updateInventory()` after giving items via the `give_item` action, ensuring the client inventory display updates immediately.
+
+- **Inventory Desync on Item Give**: Fixed `ItemGiveAction` not calling `player.updateInventory()` after adding items, causing a visual desynchronization where the player's hotbar/inventory wouldn't visually update until the next interaction.
+- **Multi Dialogs `number-of-columns`**: Fixed multi-action dialogs not supporting the `number-of-columns` option.
+- **Nexo Glyphs in Items**: Fixed Nexo glyphs not working inside items. Add `skip-first-cache: true` to the item configuration to use them.
+- **Animation Listener**: Fixed an issue with `PacketAnimationListener` ([#245](https://github.com/Maxlego08/zMenu/issues/245)).
+
+**Internal Changes**
+
+- New Minecraft version detection system `MinecraftVersion` over old `NMSVersion` enum, allowing more flexible version checks and better support for future Minecraft versions without needing to update the plugin.
+- New utils annotations
+    - `@SinceVersion` | These annotations can be used to mark classes that should only be loaded for specific Minecraft versions, check in the `VersionFilter` class for more details.
+    - `@UntilVersion` | These annotations can be used to mark classes that should only be loaded for specific Minecraft versions, check in the `VersionFilter` class for more details.
+    - `@PaperOnly` | These annotations can be used to mark classes that should only be loaded if the server is a Paper version, check in the `VersionFilter` class for more details.
+    - `@SpigotOnly` | These annotations can be used to mark classes that should only be loaded if the server is a spigot version, check in the `VersionFilter` class for more details.
+    - `@AutoComponentLoader` (renamed from `@ComponentLoader`) | Allow to load dynamically all items component loader without having to register them one by one in the `ZComponentManager` class for "fr.maxlego08.zmenu" package, filtering by version and server type with the new annotations by the helper of `VersionFilter` class.
+    - `@AutoListener`  | Allow to load dynamically all listeners who take a `MenuPlugin` in their constructor or no-arg constructor without having to register them one by one in the `ZListenerManager` class for "fr.maxlego08.zmenu" package, filtering by version and server type with the new annotations by the helper of `VersionFilter` class.
+    - `@AutoActionLoader` | Allow to load dynamically all action loaders without having to register them one by one, filtering by version and server type via the `VersionFilter` class.
+    - `@AutoMaterialLoader` | Allow to load dynamically all material loaders without having to register them one by one, filtering by version and server type via the `VersionFilter` class.
+    - `@AutoPermissibleLoader` | Allow to load dynamically all permissible (requirement) loaders without having to register them one by one, filtering by version and server type via the `VersionFilter` class.
+    - `@AutoRuleLoader` | Allow to load dynamically all item rule loaders without having to register them one by one in the `ZRuleLoaderRegistry`, filtering by version and server type via the `VersionFilter` class.
+    - `@RequiresPlugin` | Mark a class so it is only loaded when a given plugin is present. Now supports a `version` and a `type` (`Comparison`) to only load the class when the plugin version comparison is true, plus a `checkMode` (`EXISTS` / `EXISTS_AND_ENABLED`) to choose between "plugin installed" and "plugin installed and enabled".
+- All action, component, listener, material, permissible and rule loaders are now discovered and registered automatically at startup through `ClassRegistry` and the annotations above, instead of being registered one by one.
+- `ClassRegistry` now logs constructor instantiation failures, making it easier to diagnose why a loader did not register.
+- New dedicated NMS modules (`NMS/Base`, `NMS/v1_20_R3`, `NMS/v1_20_R4`, `NMS/v1_21_R1`) with a versioned `NMSHandler` abstraction.
+- New item packet management classes: `NMSMenuPacketListener`, `PacketQueue` and `ForceChannelPromise`.
+- New item components: `AttackRange` and `MaxStackSize` (with Spigot and Paper implementations); entity variant loaders refactored onto shared base classes (`CollarColor`, `DyeColor`, `Enum`, `Registry` variant loaders).
+- Standardized string casing using `Locale.ROOT` across all classes for consistent, locale-independent behavior.
+- Migrated the build to a Gradle version catalog (`gradle/libs.versions.toml`).
+
+# 1.1.1.4
+
+## New Features
+
+- **Bedrock Inventory Support**: Added full Bedrock inventory support via Geyser/Floodgate integration. Includes Bedrock-specific actions, buttons, input builders (with placeholders support and legacy color code conversion), drag button, inventory replacement, dialog support, and Bedrock player validation.
+- **Inventory Replacement**: Implemented inventory replacement functionality, allowing inventories to be dynamically replaced across various classes.
+- **ItemStack Build Context**: Added `ItemStack` support to build context and updated durability handling in menu item stack.
+- **PaperProfileComponent**: Added new `PaperProfileComponent` for Paper-specific profile handling.
+
+## Bug Fixes
+
+- **Clear Inventory + BACK Button**: Fixed items being restored to the player when clicking a BACK button between two inventories with `clear-inventory: true` and `clear-inventory-type: PACKET_EVENT`.
+- **Item Pickup with Clear Inventory**: Fixed items being picked up by the player when `clear-inventory` is enabled.
+- **Lore Metadata Duplication**: Fixed "lore" metadata duplication when loading items.
+- **Color Handling**: Fixed and simplified color handling for leather armor and banner patterns in `MenuItemStackLoader`.
+- **NPE Fix**: Fixed null pointer exception.
+- **Import Fix**: Fixed import for `ZBuildContext` in `ItemEditAction`.
+- **API Errors**: Fixed errors and updated API version.
+
+## Improvements
+
+- **Requirement Configuration Validation**: Added validation for `click-requirement`, `view-requirement`, and `open-requirement` configurations. Detects common misconfiguration where users place requirement keys directly under the requirement section instead of using named groups (for click-requirement) or a `requirements` list (for view/open-requirement). Displays a clear warning message with an example of the correct structure and a link to the documentation.
+- **Inventory Lookup Optimization**: Optimized inventory lookup with a map cache for better performance.
+- **CraftEngine Compatibility**: Updated compatibility with the latest version of CraftEngine.
+- **Color Parsing**: Added color parsing support.
+
+## Changes
+
+- **Time Placeholders**: Changed `time_unix_timestamp`, `time_next_day_unix_timestamp`, and `time_today_start_unix_timestamp` placeholders to return values in seconds instead of milliseconds.
+
+## Internal Changes
+
+- Standardized method parameter annotations to use `@NonNull` across action and button classes.
+- Standardized `this` keyword usage in method return statements for clarity.
+- Streamlined item stack creation by consolidating special item stack application.
+- Enhanced click handling in `Button` class and simplified click requirement configuration.
+- Updated Nexo dependency version.
+- Updated Gradle repositories URL for Floodgate.
+- Removed unused library files (`FirstCore.jar`, `zEssentials.jar`, `zMenu-1.1.0.0.jar`).
+- Removed debug messages.
+
+# 1.1.1.3
+
+## New Features
+
+- **Pagination Management System**: Introduced `PaginationManager` with `PaginationButton`, `PaginationNextButton`, and `PaginationPreviousButton` classes, allowing a single button to handle pagination. Includes max page tracking and optimized page size handling.
+- **Pagination Placeholders**: Added pagination-related placeholders to `MenuPlaceholders` for enhanced inventory navigation.
+- **Reset Pagination Action**: New `ResetPaginationAction` and loader to reset pagination state for button paginations.
+- **Skip Close Actions on Inventory Switch**: Added `skip-close-actions-on-switch` configuration option to prevent close actions from firing when switching between inventories, fixing issues with back/inventory actions triggering on close.
+- **PacketManager Interface**: Introduced `PacketManager` API interface and refactored title name handling in packet events for cleaner architecture.
+- **ClickAction Enum**: Added `ClickAction` enum to streamline action handling in `InventoryLoader`.
+
+## Bug Fixes
+
+- Fixed `CustomModelDataComponent` data handling (removed Optional) and added Paper-specific implementation (`PaperCustomModelDataComponent`) for proper Paper compatibility.
+- Fixed head cache issue in `ZMenuItemStack`.
+- Fixed unnecessary `toLowerCase` conversion on dialog names in `CommandDialogOpen`.
+- Fixed item button click handling by removing redundant null check for clickable buttons.
+
+## Internal Changes
+
+- Added javadocs.
+- API fixes.
+- Removed unused class.
+
+# 1.1.1.2
+
+## Bug Fixes
+
+- Fixed `openWithOldInventories` method crash on 1.20 by using `CompatibilityUtil.getTopInventory()` for safe inventory access.
+- Fixed trim pattern and material validation: now uses Bukkit `Registry` instead of the hardcoded `TrimHelper`, with proper error messages listing all available patterns/materials when a key is not found.
+- Fixed null `ItemFlag` entries causing errors when applying flags to item meta.
+- Fixed `EnchantmentGlintOverrideComponent` not handling `false` values correctly - previously only `true` was applied, now both `true` and `false` are respected.
+- Fixed click requirements defaulting to an empty click list when none are specified - now defaults to all click types.
+- Fixed `AttributeWrapper` to support an optional `NamespacedKey` instead of always generating a random UUID, preventing attribute duplication on item rebuild.
+- Fixed database connection logger initialization order in `ZStorageManager`.
+- Fixed item loading from map (`loadItemStack`) to use `MenuItemStackLoader` instead of the removed `MenuItemStackFormMap` class.
+
+## Improvements
+
+- **Command Permissions**: Added dedicated permissions for `CommandMenuEditor` (`ZMENU_EDITOR`), `CommandMenuVersion` (`ZMENU_VERSION`), and `CommandMenuGiveOpenItem` (`ZMENU_GIVE_OPEN_ITEM`).
+- **API**: Added `getClickRequirementKeys()` method to `MenuPlugin` interface, allowing addons to retrieve the supported click requirement configuration keys.
+- **Default Configs**: Updated default configuration files (`pro_inventory.yml`, `playtime_reward.yml`) to use kebab-case (`view-requirement`, `click-requirement`, `open-requirement`) matching current conventions.
+- **Dependencies**: Added `adventure-text-minimessage` as a library dependency in `plugin.yml`.
+
+## Internal Changes
+
+- Removed unused `PlayerSkin` class.
+- Removed unused `MenuItemStackFormMap` class and associated `fromMap` static method.
+- Cleaned up imports and formatting across multiple files.
+
+---
+
+# 1.1.1.1
+
+## New Features
+
+- **MMOItems Support**: Added material loader for MMOItems plugin integration.
+- **Enchantments Component**: Added enchantments component support for item configuration.
+
+## Performance
+
+- Performance improvement for items that will use a player's nickname to be displayed (player-head optimization).
+
+## Bug Fixes
+
+- Fixed enchant key parsing in configuration.
+- Fixed enchantments component initialization.
+- Fixed title parsing before sending to player in `PlayerTitleAnimation`.
+- Fixed dynamic material check in menu item stack caching logic.
+- Fixed `%player%` as a valid player argument in validators.
+- Fixed error handling and formatting in various loaders and actions.
+- Fixed basehead itemstack rendering.
+- Fixed French translations in message strings.
+- Fixed wrong format issues.
+- Fixed null checks for player in packet listeners.
+- Fixed `[]` display when placeholder returns an empty list.
+- Fixed null message handling in `getLegacyMessage` method.
+
+## Internal Changes
+
+- Refactored placeholder package structure and usage.
+- Renamed `SpigotDyeColorItemComponentLoader` to `SpigotDyedColorItemComponentLoader`.
+- Changed item model type from `String` to `NamespacedKey` in MenuItemStack classes.
+- Updated `@Contract` annotations in `BaseInventory.java` for clarity.
+- Removed unnecessary whitespace in `ComponentMeta.java`.
+- Removed debug messages.
+
+---
+
+# 1.1.1.0
+
+## New Features
+
+- **Performance Debug System**: Added per-operation performance monitoring for inventory opening. Measures execution time for each step (permission checks, button building, item rendering, etc.) and logs results to console. Configurable via `enable-performance-debug`, with threshold filtering and whitelist/blacklist support for operation names.
+
+## Performance
+
+- **ItemStack Build Optimization**: Optimized `ZMenuItemStack.build()` to reduce redundant work on each inventory open:
+  - Eliminated duplicate PlaceholderAPI resolution for material strings (was called twice per build)
+  - Pre-resolve `Material` at load time when no placeholders are present, skipping PAPI parsing at runtime
+  - Replaced exception-based control flow for numeric material IDs with a simple numeric check
+  - Pre-compute `NamespacedKey` for `tooltipStyle`, `itemModel`, and `equippedModel` in setters instead of splitting/creating on every build
+  - Cache the glowing enchantment lookup instead of querying the enchantment registry on every build
+  - Pre-split lore lines containing `\n` at load time instead of splitting on every build
+  - Added early exit in `Placeholders.parse()` when the string contains no `%` character, avoiding unnecessary iteration over all placeholder entries
+
+## Internal Changes
+
+- **MiniMessage Color Parsing Refactor**: Consolidated color parsing methods into `MiniMessageColorUtils` class for better maintainability and code reuse.
+- Added unit tests to verify preservation of MiniMessage color tags.
+
+## Bug Fixes
+
+- Fixed hex color parsing regex to correctly handle edge cases.
+- Fixed typo in `PlayerCommandLoader` constructor parameter list.
+
+---
+
+# 1.1.0.9
+
+## New Features
+
+- **Dynamic Inventory Title Updates**: Added `PacketEventChangeTitleName` and `PacketTitleListener` for changing inventory titles dynamically without reopening the inventory. Requires [PacketEvents](https://github.com/retrooper/packetevents).
+- **ClearInvType for Inventory Management**: Introduced `ClearInvType` enum and temporary inventory storage system for better inventory state management.
+- **Per-Inventory Click Limiter**: The click limiter now only applies to zMenu inventories and can be configured per inventory with `click-limiter-enabled: true/false`. It no longer interferes with non-zMenu inventories.
+- **Enhanced ItemButton Context**: `ItemButton` now includes inventory context for improved button logic and interactions.
+
+## Bug Fixes
+
+- Fixed parsing of map structures inside arrays in YAML configuration. [#219](https://github.com/Maxlego08/zMenu/pull/219)
+- Fixed click limiter applying to all inventories instead of only zMenu inventories. [#219](https://github.com/Maxlego08/zMenu/pull/219)
+- Fixed inventory restoration on plugin disable. [#215](https://github.com/Maxlego08/zMenu/pull/215)
+- Fixed PacketEvents warning on plugin disable. [#215](https://github.com/Maxlego08/zMenu/pull/215)
+- Resolved scheduler compatibility issue with Folia.
+- Fixed task registration during plugin shutdown.
+- Enhanced variant component initialization with proper error handling and version checks.
+
+# 1.1.0.8
+
+## New Features
+
+- **New Item Component System (1.20.5+)** - Complete overhaul with 30+ components (Enchantments, Lore, Trim, Tool, PotionContents, WrittenBook, AttributeModifiers, etc.). Improved error handling and case sensitivity.
+- **Animated Inventory Titles** - Requires [PacketEvents](https://github.com/retrooper/packetevents).
+- **Local Placeholders** - `local-placeholders` section in inventory/pattern configs, cached with Guava for better performance.
+- **Actions Pattern System** - Define default actions for all buttons in `actions_patterns/` directory.
+- **New Actions**: `message-to` (send to specific player), `open-actions` and `close-actions` for inventories.
+- **Console Commands** - Commands can now be executed from console (`console: true`).
+- **LuckPerms** - Permission expiration support with time unit configuration.
+- MiniMessage support in toasts.
+- Multi-line inventory names (useful with zTextGenerator).
+- Resin trim material support.
+
+## Bug Fixes
+
+- Fixed Avast false positive on VirusTotal.
+- Fixed async access block and container component issues.
+- Fixed PacketAnimationListener task execution when plugin is disabled.
+- Fixed button reference in updatedButtons iteration.
+- Various minor fixes.
+
+## Internal Changes
+
+- Removed `getCustomItemStack(Player player)` method. Use `getCustomItemStack(Player player, Placeholders placeholders)` instead.
+- Renamed package `zcore` → `common`.
+- Moved Component classes to API module.
+- Added nullability annotations and new interfaces (`BuildContext`, `MenuItemStackContext`).
+- Improved JavaDoc documentation.
+---
+
+# 1.1.0.7
+
+- Fixed NMS compatibility for **1.21.10**.
+- Fixed issues with **DeluxeMenus** inventory loading.
+- Fixed **MiniMessage** regex handling.
+- Added the ``ZMenuItemsLoad`` event, triggered when zMenu custom items are loaded or reloaded.
+- Improved the logging system.
+- Improved item mechanics.
+- Added ``deny-chance-actions`` support for actions.
+- Various minor fixes and general code improvements.
+- Added new placeholders:  
+  ``%zmenu_time_unix_timestamp%``,  
+  ``%zmenu_time_next_day_unix_timestamp%``,  
+  ``%zmenu_time_today_start_unix_timestamp%``
+---
+# 1.1.0.6
+
+- Fixed the removal of default attributes.
+- Improved attribute configuration, you now have more comprehensive options. More information available [here](https://docs.zmenu.dev/configurations/items#attributes).
+- Added more configuration options for patterns.
+- Added Brewery support to create your items.
+- Added an option to run actions as an administrator.
+- Added support for Oraxen fonts.
+- Fixed the loading of certain plugins.
+- Added a system to apply actions to items.
+---
+# 1.1.0.5
+
+- Improved and optimized internal code. These consist of micro-optimizations that will only be noticeable on servers with several hundred players.
+- Added an option to disable toasts.
+- Fixed antivirus-related flag issues.
+- Fixed default attributes applied to items.
+- Added support for MythicMobs.
+- Added a placeholder for global placeholders.
+---
+# 1.1.0.4
+
+- Update to Sarah 1.20. Added MARIADB support
+- Fixed NONE database settings
+- Improve pattern file loading
+---
+# 1.1.0.3
+
+- Added dialogs inventories ``/zm dialog`` [#186](https://github.com/Maxlego08/zMenu/pull/186) by [1robie](https://github.com/1robie) and [saildrag](https://github.com/saildrag)
+- Added ``%player%`` placeholder for each action
+- Added a view requirement system with the ability to define an else for another pattern
+- Added option to disable inventory loading: ``enable: false``
+- Added ``reason`` for withdraw and deposit action
+- Fixed withdraw and deposit action with zEssentials
+- Improve update checker [#183](https://github.com/Maxlego08/zMenu/pull/183)
+- Fix ``openInventoryWithOldInventories`` method
+- Fixed inventory button drop on death when clear inv is active
+- Fixed item giving on disconnect when clear inv is active
+- Fixed textures of offline players’ heads
+- Optimized Enum NmsVersion → no more repeated calls to getVersion (unnecessary since the version doesn’t change at startup)
+- Fixed commands not displaying the "No permission" message during setup
+- New command: ``/zm contributors``
+- New command: ``/zm addons``
+- New command: ``/zm dumplog``
+- Update to Sarah 1.19
+---
+# 1.1.0.2
+
+- Added [toast](https://docs.zmenu.dev/configurations/actions#toast) action
+- Added more API methods
+- Added equipped model, for custom armor
+- Fixed error if button is not found
+- Fixed luckperm action
+- Fixed discord parsing
+- Fixed inventory reloading issues [#173](https://github.com/Maxlego08/zMenu/pull/173)
+- Updated source code to java 21 [#166](https://github.com/Maxlego08/zMenu/pull/166)
+- Updated to last CurrenciesAPI version
+- Some fixs [#170](https://github.com/Maxlego08/zMenu/pull/170)
+---
+# 1.1.0.1
+
+- Added player target with inventory name [#169](https://github.com/Maxlego08/zMenu/pull/169)
+- Added player data convert with ``/zm player convert``, convert old JSON data to SQL
+- Update to last [CurrenciesAPI](https://github.com/GroupeZ-dev/CurrenciesAPI) version
+- Use EntityScheduler instead of RegionScheduler [#168](https://github.com/Maxlego08/zMenu/pull/168)
+- Fix items attributes
+---
+# 1.1.0.0
+
+- Codebase structure overhaul: the project now uses Gradle. This major change has enabled numerous modifications and improvements to the API. The API is now cleaner, more efficient, and easier to use. **You will need to update all your plugins that use zMenu at the same time** to avoid compatibility issues.
+- Upgraded to Java 21, and the minimum supported Minecraft version is now 1.19. Since very few servers using zMenu were still on older versions, we decided to drop support for legacy Minecraft versions. This simplifies the codebase and opens the door to many new enhancements.
+- Added a `config.yml` file. You can now delete the old `config.json` file. New configuration options are also available.
+- Integrated database support. This allows logging of opened inventories by players and enables cleaner data storage compared to JSON files.
+- Added `/zm players removeall <key>` command, which removes a specific key from all players.
+- Added support for mathematical expressions in placeholder requirements and `player data` actions. To enable math operations, set `math: true`. See `cookie.yml` for examples on how to use math expressions.
+- Added `%zmenu_math_<expression>%` placeholder to perform math operations via a placeholder.
+- Added `%zmenu_formatted_math_<expression>%` placeholder to perform math operations and return a formatted value.
+- Introduced a validation system for command arguments. This lets you define the expected argument type to ensure correct values are used in your commands.
+- Added `tooltip-style: <style>` option.
+- Introduced a cache system for online players to improve performance by avoiding repeated lookups for offline player data.
+- Added `cancel-item-pickup: <true/false>`, which prevents players from picking up items while an inventory is open.
+- Added `item-model: <model>` option to customize the item’s model.
+- Added support for potion arrows using `arrow: true`.
+- Added `player command as op` action, which executes a command as if the player were OP. ⚠️ Be cautious: this gives the player all permissions during command execution.
+- Added support for **ExecutableItems** and **ExecutableBlocks**.
+- Added the **SWITCH** button. This displays a button based on the result of a placeholder, simplifying your configuration. See `switch.yml` for an example.
+- Added `refresh inventory` action to reload the inventory content.
+- Dates now include **month and year** in their display.
+- Fixed issues with the `book` action.
+---
+
+# 1.0.4.1
+
+- Added action ``discord``, Send a classic webhook discord.
+- Added action ``discord component``, Send a webhook discord with the new [component](https://discord.com/developers/docs/components/reference) system [#132](https://github.com/Maxlego08/zMenu/pull/132/).
+- Added requirements for broadcast action.
+- Added a new way to load messages action.
+- Fixed enchant loader.
+- Fixed magiccosmetics loader.
+- Fixed MenuItemStack when loaded by an ItemStack.
+- Fixed MenuItemStack attributes.
+- Change broadcast action placeholder for `%receiver%` and `%sender%`
+- Disabling the `/zm download` command by default, you must enable it in the configuration if you want to use it.
+---
+# 1.0.4.0
+
+- Fixed placeholders in actions
+- Fixed commands with arguments
+- Fixed minimessage [#124](https://github.com/Maxlego08/zMenu/pull/124)
+- Added RoyaleEconomy support
+---
+# 1.0.3.9
+
+- Added dependency management for inventory loading. If an inventory needs to be loaded but one of its dependencies is not yet loaded, it will be put on hold until all dependencies are loaded. This allows you to use any element from any other plugin in any zMenu inventory.
+- Added teleport action.
+- Added default value for commands. This allows having optional arguments with a default value.
+- Added API method : ``InventoryManager#loadYamlConfiguration(File file)``, load a YAML file using the file�s placeholders `global-placeholders.yml`. This allows you to reduce the size of your configurations by avoiding the repetition of certain values.
+- Added API method : ``ZPermissibleLoader#loadPermissible(ButtonManager buttonManager, TypedMapAccessor accessor, String key, String path, File file)``, Allows you to load a list of permissible. 
+- Added API method : ``ButtonManager#loadPermissible(YamlConfiguration configuration, String path, File file)``, allows you to load a list of permissible list from a configuration.
+- Added API method : ``ButtonManager#loadActions(YamlConfiguration configuration, String path, File file)``, allows you to load a list of action list from a configuration.
+- Added ``conditional-name``, allows you to change the name of the inventory based on conditions. (available with [zMenu+](https://www.spigotmc.org/resources/zmenu-premium-zmenu-addon.115533/)).
+- Added MagicCosmestics material loader.
+- Added the ability to include `\n` in actions. This allows you to send a list of commands in an inventory argument and more !
+- Added ``lore-type``, allows you to define how the lore should interact with the itemstack. If you are using a material loader, you can specify that the lore is added at the end of the existing lore, added before the existing lore, or replaces the existing lore.
+- Added `and` and `or` permissible. Allows you to create more complex requirements. (available with [zMenu+](https://www.spigotmc.org/resources/zmenu-premium-zmenu-addon.115533/)). 
+- Fixed placeholders for messages and commands.
+- Fixed ConcurrentModificationException that could occur when using PlayerData [#104](https://github.com/Maxlego08/zMenu/issues/104).
+- Fixed material's loaders.
+- Fixed commands and messages placeholders.
+- Fixed buttons with multiple slots that could not be on another page. You can now define a list of slots and a page for your buttons.
+- Fixed next and back button with old inventories
+- Rework `messages.yml`, you need to redo your configuration.
+- You can use trims in 1.20.
+- Updated `miniumRequirement` to `minimum-requirement` for requirements.
+- Updated `maxPage` to `max-page` for inventory name.
+- Register command permissions in Spigot. This prevents the command from appearing in the player's tab completion if they do not have permission.
+---
+# 1.0.3.8
+
+- Added [Global Placeholders](https://docs.zmenu.dev/configurations/global-placeholders), which allows you to define
+  values that will be available across all inventory configuration files.
+- Fixed custom heads with URLs
+- Fixed inventories that do not have a default type
+- Added sound category
+- Removed deprecated method ``onInventoryOpen(Player player, InventoryEngine inventory)``
+- Improved code, removed the ``slot`` variable to use only the list of ``slots`` for each button
+- Fixed actions withdraw, deposit and requirement money, now allowing lowercase
+- Added API code for use of slots in player inventory. Coming soon in[ zMenu+](https://www.spigotmc.org/resources/zmenu-premium-zmenu-addon.115533/) !
+- Updated folia API
+- All configuration keys are now in kebab case. Old configurations will still work but the documentation has been
+  updated to reflect the new format.
+- Improved pagination performance by avoiding unnecessary list management operations
+---
+# 1.0.3.7
+
+- Added inventory type [#97](https://github.com/Maxlego08/zMenu/pull/97)
+- Added placeholder priority [#96](https://github.com/Maxlego08/zMenu/pull/96)
+- Added the possibility to include a prefix for lists when using a pattern. You need to add text in front of your
+  placeholder
+- Modified the ``money`` permissible to support more economies
+  using [CurrenciesAPI](https://github.com/Traqueur-dev/CurrenciesAPI)
+- Modified the ``deposit`` and ``withdraw`` action to support more economies
+  using [CurrenciesAPI](https://github.com/Traqueur-dev/CurrenciesAPI)
+- Added ``deny-message`` for commands. Allows to send a custom error message if the player does not have permission.
+- Fixed the max page placeholder that says 0, it will now say 1 by default
+---
+# 1.0.3.6
+
+- Added the ability to use font ItemsAdder with format `:font-name:`
+- Improve TypedMapAccessor
+- Added API method ``InventoryManager#openInventoryWithOldInventories``
+- Added API method ``ZButton#paginate``
+- Added action ``set permission``, allows setting a permission to a player with luckperms
+- Added aliases ``command`` and `commands` for console command action.
+- Fixed max-stack-size for itemstack with 1.21
+---
+# 1.0.3.5
+
+- Added support for DeluxeMenus configurations. You no longer need to convert your DeluxeMenu configurations to zMenu,
+  they are now automatically compatible!
+- Added command ``/zm documentation [<word>]``
+- Added key `title` for inventory name, you can use `name` or `title` now
+- Fixed itemstack with 1.21, components was added when it should not be added by default.
+- Fixed the item backup system for potions and firework (use in `/zm save` command and in `zEssentials`)
+---
+# 1.0.3.4
+
+- Add support for ``\n`` in item lore
+- Add ``refresh_requirement``, allows refreshing the lore, name of the item or the button in its entirety according to
+  several conditions.
+- Add permissions on default commands
+- Add PlaceholderAction: ``DIFFERENT_STRING``, check that a string is different from the value
+- Add sub commands for commands. You can now have sub commands to perform actions, for example, create a `/votes party`
+  command, a `/votes info` command !
+- Added aliases for enchantments, this allows using the word `protection` to obtain the `PROTECTION_ENVIRONMENTAL`
+  enchantment
+- Deprecated method ``onInventoryOpen(Player, InventoryDefault)`` use
+  now `onInventoryOpen(Player, InventoryDefault, Placeholders)`
+- Fixed items flags (HIDE_ATTRIBUTES) for 1.20.4 and above
+- Added [zItems](https://www.spigotmc.org/resources/zitems-demo.118638/) support, Example:
+  ``material: "zitem:<item name>"``, zItems is an item that allows you to create items taking advantage of all the
+  features of 1.21
+
+### Only for version 1.21 and above
+
+- Added ``max-stack-size: <number>``, Overrides the default maximum stack size of this item.
+- Added ``max-damage: <number>``, Controls the maximum amount of damage an item can take.
+- Added ``damage: <number>``, The absolute amount of damage or use this item has taken.
+- Added ``repair-cost: <number>``, Number of enchantment levels to add to the base level cost when repairing, combining,
+  or renaming this item with an Anvil.
+- Added ``unbreakable: <true/fasle>``, Tools, armor and weapons set with this won't lose durability when used.
+- Added ``unbreakable-show-in-tooltip: <true/fasle>``, If false, an 'Unbreakable' line will not be included in the
+  tooltip. Default is True.
+- Added ``fire-resistant: <true/fasle>``, If true, this item will not burn in fire.
+- Added ``hide-tooltip: <true/fasle>``, If present, it will completely hide whole item tooltip (that includes item
+  name). The tooltip will be still visible and searchable in creative mode.
+- Added ``hide-additional-tooltip: <true/fasle>``, If true, disables 'additional' tooltip part which comes from the item
+  type.
+- Added ``enchantment-glint: <true/fasle>``, If true, the item will glint, even without enchantments; if false, the item
+  will not glint, even with enchantments. If null, the override will be cleared.
+- Added ``enchantment-show-in-tooltip: <true/fasle>``, If false, no enchantments will be shown in the item tooltip.
+  Default is true.
+- Added ``attribute-show-in-tooltip: <true/fasle>``, If false. The attributes will not show on the item tooltip. Default
+  is true.
+- Added ``item-rarity: <COMMON/UNCOMMON,RARE,EPIC>``, Determines the default color of its name. This enum is ordered
+  from least rare to most rare.
+- Added ``trim: <trim configuration>``, Represents an armor trim that may be applied to an item.
+---
+# 1.0.3.3
+
+- Fix nullable player in MenuItemStack
+- Add ``performMainAction`` for commands, allows to activate or not the main actions of the command. This allows you to
+  create commands with arguments without opening an inventory for
+  example. [#89](https://github.com/Maxlego08/zMenu/issues/89)
+- Add the possibility to have several languages for the lore and name of items and inventory name. Depending on the
+  player�s game language
+  you can set other messages and make your server international
+- Remove ``eco`` from plugin.yml, this caused problems loading various plugins
+- Tab completes for more of the sub commands [#75](https://github.com/Maxlego08/zMenu/issues/75)
+---
+# 1.0.3.2
+
+- Create action ``actionbar``, allows to send a message in the action bar of the player
+- Add placeholder ``%zmenu_player_is_expired_<key>%`` Check if a key has expired, if the key does not exist it will be
+  considered expired
+- Add ``updateMasterButton``, allows to update the button entirely during the update. You have `update` enabled
+- Add requirement permissible ``money``, allows you to check if the player has enough money by using the Vault API
+- Add action `withdraw` and `deposit`, allows to withdraw and add money to the player�s account using the Vault API
+- Fix folia (omg folia wtf)
+- Fix refresh action
+- Fix placeholder API cache, its disable by default
+- Add support for 1.20.6 (There has been a big change on how to encode and decode itemstacks in base64, the old values
+  will no longer work)
+---
+# 1.0.3.1
+
+- Fix folia commands and data manager [#63](https://github.com/Maxlego08/zMenu/issues/63)
+- Fix actions for command with delay
+- Fix MenuItemStack with AIR material
+- Fix color with messages in button
+- Fixed saving enchantments with /zm save
+- Change Item Permission to check in all inventory instead of just the player's hand
+- Create new Button for zMenu+ ``INPUT``, allows you to choose a number or a text in the chat and perform actions
+- You can choose the pattern plugin for the button with ``pluginName``
+- Fix MenuItemStackLoader for save model id
+---
+# 1.0.3.0
+
+- Create new placeholder ``%zmenu_player_next_page%``, return player next page
+- Create new placeholder ``%zmenu_player_previous_page%``, return player previous page
+- Create new requirement: ``playername``, Check if a text is a player nickname
+- Fixed the display of a button with a playerHead if the text is not a `playerHead`. This avoids server lag when opening
+  inventory.
+- Fixed Numbers saved in PlayerData are not Numbers after a restart. [#59](https://github.com/Maxlego08/zMenu/issues/59)
+- Added Placeholder in head url [#58](https://github.com/Maxlego08/zMenu/issues/58)
+- Added Action - Data placeholder [#56](https://github.com/Maxlego08/zMenu/issues/56)
+- Expand player data commands with add & subtract [#46](https://github.com/Maxlego08/zMenu/issues/46)
+- New features for Commands (Perform action and Auto-completion) [#26](https://github.com/Maxlego08/zMenu/issues/26)
+- You can now open a book
+- Create ``/zm download <link>`` command. You can download configuration files from links, discord links for example.
+---
+# 1.0.2.9
+
+- Added support for [zHead](https://www.spigotmc.org/resources/zhead-database-plugin-for-heads.115717/). A free and open
+  source head database plugin (with more than 72.000 heads)
+- Create new placeholder ``%zmenu_player_page%``, return player page
+- Create new placeholder ``%zmenu_player_max_page%``, return player max page
+- Change NEXT and PREVIOUS button. If you click right you will go directly to the first or last page.
+- Improve MiniMessage format with italic text
+- Create new file: `default_values.yml`, it will contain all the default values for the placeholders of the player data.
+- Create pattern for Button. You can create a pattern file for a button with placeholders. And in your inventory, just
+  call the pattern with a placeholder list. The placeholders will be replaced by your values and the button will be
+  loaded with the new values. Thus, you can have dozens of similar buttons while reducing your configurations by several
+  hundred lines. More information [here](https://docs.zmenu.dev/configurations/patterns#button).
+- Creation of 5 configurations for zMenu:
+
+1. PLAYTIME LEVELS - zMenu Configurations: https://minecraft-inventory-builder.com/resources/9
+2. VOTE MENU - zMenu Configurations: https://minecraft-inventory-builder.com/resources/8
+3. DONUTSMP HOME - zMenu Configurations: https://minecraft-inventory-builder.com/resources/7
+4. zAuctionHouse - Hypixel AuctionHouse: https://minecraft-inventory-builder.com/resources/6
+5. zAuctionHouse - DonutSMP AuctionHouse: https://minecraft-inventory-builder.com/resources/5
+---
+# 1.0.2.8
+
+- Add /zm inventories - Allows access to the inventories of the online inventory editor
+- Add PlayerInteractEvent in DupeListener
+- Fix classic meta with PAPI color
+- Fix NPE with ButtonOption
+---
+# 1.0.2.7
+
+- Start of development of the [zMenu+](https://m.zmenu.dev/4) paid addon. This addon will be available with the purchase
+  of [Premium](https://minecraft-inventory-builder.com/account-upgrade) upgrade.
+- Huge API Change. This change introduces [zMenu+](https://m.zmenu.dev/4)
+- Create ButtonOption, allows any developer to add options that will be available for all types of buttons.
+- Create PaginateButton interface. This interface allows you to create buttons that need pagination. This interface will
+  manage the number of pages in the inventory.
+- Add matrix support for button slots [#39](https://github.com/Maxlego08/zMenu/issues/39)
+- Add /zm editor, at the moment this command redirects to the online editor
+- Add target placeholder [#48](https://github.com/Maxlego08/zMenu/issues/48)
+- Fix reload command with pattern. The pattern were reload after the inventories
+- Fix error with InventoryPlayer
+- Fix NmsVersion with 1.8 and 1.9
+- Fix anti-dupe for old version
+- Fix MenuItemStack loader with placeholder check
+- Fix CONTAINS_STRING action for placeholder
+- Fix NMS with 1.20.4
+- Fix method ``getRealSlot`` with isPermanent
+---
+# 1.0.2.6
+
+- Add BlockPlaceEvent for Anti Dupe
+- Add placeholder %zmenu_test% for testing
+- Add ``job`` requirement. Check if the player has a job with JobsReborn plugins
+- Added a cache on placeholders. By default, the cache is 500ms. That corresponds to opening a menu. So if you have
+  several times the same placeholder used, it will only be called once.
+- Fix sound action, pitch and volume was reversed
+- Fix commands async
+---
+# 1.0.2.5
+
+- Add new lore as string support
+- Fix itemstack amount of 0
+- Support file with space
+- Improved API, added many new methods to make API more permissive.
+- Patterns can now be on multiple pages
+- Add custom sound to SoundOption
+- Added ability to add arguments and select page for INVENTORY
+  button [#45](https://github.com/Maxlego08/zMenu/issues/45)
+- Change update interval to milliseconds [#37](https://github.com/Maxlego08/zMenu/issues/37)
+---
+# 1.0.2.4
+
+- Added replacement of , by . for placeholders requirements. If your placeholder returns a number with a comma instead
+  of a period, the plugin can handle that.
+- Added base64 MaterialLoader. Allows to load ItemStack with all the data it can contain.
+- Added cooldown on button click. The default cooldown will be 350ms.
+- Fix Folia with VersionChecker [#35](https://github.com/Maxlego08/zMenu/issues/35)
+- Fix error with mini message format in 1.16
+- Fix JUMP Button
+- Change `/zm save <item name> <base64/yml>`, saves an element in YML or base64 format. The base64 format will save the
+  itemStack with all its data.
+- Change `page` from JUMP Button to `toPage`
+---
+# 1.0.2.3
+
+- Fixed the pattern display, they will now appear first and let the more important buttons pass over
+- Fixed MenuItemStack build method, add boolean for use cache or not
+- Fixed PAPI use if player is null
+- Create new button type: JUMP [#34](https://github.com/Maxlego08/zMenu/pull/34)
+---
+# 1.0.2.2
+
+- Added open menu with item interaction [#29](https://github.com/Maxlego08/zMenu/pull/29) by EnzoShoes
+- Added ``/zm giveopenitem <inventory> [<player>]``
+---
+# 1.0.2.1
+
+- Added the ability to perform actions when clicking. For simple actions you no longer need to use a click_requirements.
+- Added [ShopKeeper](https://www.spigotmc.org/threads/shopkeepers.447969/) support for
+  action. [#27](https://github.com/Maxlego08/zMenu/issues/27)
+- Added deny and success action for each requirement. In addition to its global actions, you can add them for each
+  requirement. Perfect to set the error message for the player.
+- When creating ItemStacks, the plugin will no longer use PlaceholderAPI if the item contains no placeholders.
+- Added cache system for ItemStack. If ItemStack does not use placeholder API, then it will be created once and cached.
+  All inventories will therefore use the same ItemStack. This allows to improve performance (from a few thousand nano
+  seconds per item, so if you have a lot of items in your inventory the gain can be very important).
+- Fixed command /zm open. The opening arguments were only taken into account if the command had more than 5 arguments
+  instead of starting from 5.
+- Fixed command /zm reload with commands.
+---
+
+# 1.0.2.0
+
+- Added ANY and ALL support for click requirements [#24](https://github.com/Maxlego08/zMenu/issues/24)
+- Added a check when displaying the item to prevent that if the slot is outside the slots this triggers an error but
+  just a message in the console
+- Fix error with 1.20.4
+- Fix error with Meta
+- Fix error with slot page and else button
+- Fix checkPermission with view requirement who made it check placeholders and permissions impossible
+---
+
+# 1.0.1.9
+
+- Added back type for action requirements
+- Improved ItemStackLoader. This class is used for converting inventories from GuiPlus.
+- Fixed loaded messages
+---
+
+# 1.0.1.8
+
+- Add command ``/zmenu save <name>``. Allows to save the item in your hand in format for plugin configuration.
+- Add material loader
+  for [eco](https://plugins.auxilor.io/all-plugins/the-item-lookup-system) [#19](https://github.com/Maxlego08/zMenu/pull/19)
+- Set ``enableAntiDupeDiscordNotification`` to false by default
+- Fix ItemStackCompound
+- Fix PDC dupe, replace BOOLEAN by INT
+---
+
+# 1.0.1.7
+
+- Added number of inventory loaded with command /zm reload
+- Added anti dupe system with NMS Tag
+- Fix model id value in config, you can now you modelId, customModelId or customModelData
+- Fix player head for
+  1.20+ (https://blog.jeff-media.com/creating-custom-heads-in-spigot-1-18-1/) https://github.com/Maxlego08/zMenu/issues/16
+- Fix docs for potion
+- Added information about potion in 1.8 - 1.12. You have to do this:
+
+```yml
+material: POTION
+durability: 16454
+```
+---
+
+# 1.0.1.6
+
+- Start of the translation of the plugin documentation in French. If you want to translate zMenu documentation into your
+  language, please contact me.
+- You can use multiple placeholders now, do like this:
+
+```yml
+placeholders:
+  - placeholder: <your placeholder>
+    value: <your value>
+    action: <your action>
+  - placeholder: <your placeholder>
+    value: <your value>
+    action: <your action>
+``` 
+
+Be careful, you must put an ``s`` to **placeholder**, otherwise it will not work.
+
+- You can use now the text ``placeholder`` instanceof ``placeHolder``
+- Start new way to configure the plugin, you have now ``requirement`` and ``actions``:
+  A requirement consists of a permission list to check (placeholder, permission, regex and item), an action list on
+  success and an action list on deny.
+  You have 11 actions available:
+
+1. broadcast
+2. broadcast_sound
+3. close
+4. connect
+5. console_command
+6. data
+7. inventory
+8. message
+9. chat
+10. player_command
+11. sound
+
+Example for ``view_requirement``:
+
+```yml
+view_requirement:
+  deny:
+    - type: chat
+      messages:
+        - "msg Maxlego08 test"
+  success:
+    - type: sound
+      sound: ENTITY_PLAYER_LEVELUP
+  requirements:
+    - type: permission
+      permission: "admin.use"
+    - type: permission
+      permission: "use.pro.config"
+    - type: placeholder
+      placeholder: "%player_gamemode%"
+      value: "CREATIVE"
+      action: equals_string
+    - type: placeholder
+      placeholder: "%player_is_flying%"
+      value: "yes"
+      action: equals_string
+```
+
+Example for ``open_requirement``:
+
+```yml
+open_requirement:
+  requirements:
+    - type: regex
+      input: "%player_item_in_hand%"
+      regex: "(NETHERITE_|DIAMOND_|IRON_|GOLDEN_|STONE_|WOODEN_|LEATHER_|BOW|CROSSBOW|FISHING_ROD|SHEARS|SHIELD|TRIDENT|TURTLE_HELMET|ELYTRA|FLINT_AND_STEEL)"
+  deny:
+    - type: message
+      messages:
+        - "&cYou doesn't have an item in your hand."
+```
+
+Example for ``click_requirement``:
+
+```yml
+click_requirement:
+  left_click:
+    clicks:
+      - LEFT
+      - SHIFT_LEFT
+    requirements:
+      - type: placeholder
+        placeholder: "%player_gamemode%"
+        value: "CREATIVE"
+        action: equals_string
+    deny:
+      - type: inventory
+        inventory: "example"
+        plugin: "zMenu"
+    success:
+      - type: message
+        messages:
+          - "well <red>done <green>you did it"
+```
+
+More information on the plugin documentation: https://docs.zmenu.dev/
+
+- Add alias for placeholder action:
+
+1. BOOLEAN: `b=`
+2. EQUALS_STRING: `s=`
+3. EQUALSIGNORECASE_STRING: `s==`
+4. CONTAINS_STRING: `sc`
+5. EQUAL_TO: `==`
+6. SUPERIOR: `>`
+7. SUPERIOR_OR_EQUAL: `>=`
+8. LOWER: `<`
+9. LOWER_OR_EQUAL: <`=`
+
+- Enable version checker
+- Improve javadocs
+- Remove example.yml, example2.yml and example3.yml in inventories folder
+- Remove example.yml in commands folder
+- Rename pattern1.yml to pattern_example.yml
+- Edit commands.yml file with new default config
+- Add pro_inventory.yml in inventory folder
+- Fix component for inventory name
+- Add cache system for ComponentMeta (optimizes code and makes it more efficient)
+---
+
+# 1.0.1.5
+
+- Fix button load if type doesn't exist
+- Add ``onBackClick`` in Button, is called when a player will click a ``BACK`` button just before performing his action.
+- Add method ``setMaxPage`` in InventoryDefault class
+- Add event cancel before use the button. It is now possible to activate the click of items in the inventory from the
+  api
+---
+
+# 1.0.1.4
+
+- Inventory can load with error in button
+- Fix commands register and unregister. The commands are now saved in the plugin that will load the command.
+- Fix Firework meta for firework rocket
+- Improve documentation: https://github.com/Maxlego08/zMenu/issues/15
+---
+
+# 1.0.1.3
+
+- Added `DefaultButtonValue` in `Button`, Change the default values of the buttons if they are not present in the
+  configuration. To avoid, for example, having to redefine the slot for elses buttons or not having to set isPermanent:
+  true for NEXT or PREVIOUS type buttons
+- Added `advanced_inventory.yml` in default config file
+- Fix `/zm reload` with patterns
+- Previous and Next button are now permanent button by default
+- Else button doesnt need to set slot and page
+- Fix error with 1.20.2 (PlayerSkin#getFromPlayer)
+---
+
+# 1.0.1.2
+
+- Add `/zm list` command
+- Add `/zm create <file name> <inventory size> <inventory name>` command
+- Add action, closeInventory
+- Add new default inventory, basic_inventory. An inventory with lots of explanation for beginners.
+- Fix ``ComponentMeta`` with old color tag
+- Disable double click action
+---
+
+# 1.0.1.1
+
+- Add ``playerCommands`` as an aliases for ``commands``
+- Add ``FastEvent`` interface, allows you to listen to plugin events without going through the Bukkit API, performance
+  gain
+- Add ``InventoryLoadEvent`` event, Event called when an inventory is loaded
+- Add ``ButtonLoadEvent`` event, Event called when a button is loaded
+- Add ``PlayerOpenInventoryEvent`` event, Event called when a player opens an inventory
+- Removed the requirement to have another button for the NEXT and PREVIOUS button
+- Removed registerButtonListener
+- Fix /zm open argument, you can now set argument like
+  that: `/zm open zmenu:example_punish Maxlego08 false target:Maxlego09 reason:"this is a really long reason"`
+- Fix Leather color material case
+- Fix GameProfile with null name
+- Change ButtonLoadEvent to ButtonLoaderRegisterEvent
+---
+
+# 1.0.1.0
+
+- Allow inventories without items
+- Add %player% with papi utils
+- Add getter for MetaUpdater in InventoryManager
+- Add method getCurrentPlayerInventory in InventoryManager
+- Add method buildDisplayName in Button
+- Add method buildLore in Button
+- Add updateOnClick buttonOption, update button if player click on another button
+- Add button listener method in InventoryManager
+- Add check for new messages value saving
+- Fix placeholder verification
+- Fix patterns interactions
+- Fix itemstack amount with custom material
+- Fix item lore with lore is empty
+- Fix message translation for hex color
+- Fix Component meta regex
+---
+
+# 1.0.0.9
+
+- Add %player% variable for messages on button
+- Add PlaceholderAPI support for custom model data (modelID)
+- Add argument for command /zm open
+---
+
+# 1.0.0.8
+
+- Change super.onClick on each buttons
+- Add inventory name for commands arguments (https://github.com/Maxlego08/zMenu/issues/12)

@@ -1,0 +1,149 @@
+package fr.maxlego08.menu.api.engine;
+
+import org.bukkit.GameMode;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+
+public class ItemButton {
+
+    private final int slot;
+    private ItemStack displayItem;
+    private final Map<ClickType, Consumer<InventoryClickEvent>> onClickType = new HashMap<>();
+    private final boolean inPlayerInventory;
+    private final BaseInventory baseInventory;
+    private Consumer<InventoryClickEvent> onClick;
+
+    public ItemButton(@NotNull ItemStack displayItem, int slot, boolean inPlayerInventory, @NotNull BaseInventory baseInventory) {
+        this.displayItem = displayItem;
+        this.slot = slot;
+        this.inPlayerInventory = inPlayerInventory;
+        this.baseInventory = baseInventory;
+    }
+
+    @Contract(pure = true)
+    public int getSlot() {
+        return this.slot;
+    }
+
+    @Contract("_-> this")
+    @NotNull
+    public ItemButton setClick(@NotNull Consumer<InventoryClickEvent> onClick) {
+        this.onClick = onClick;
+        return this;
+    }
+
+    @Contract("_,_-> this")
+    @NotNull
+    public ItemButton setClick(@NotNull ClickType clickType,@NotNull Consumer<InventoryClickEvent> onClick) {
+        this.onClickType.put(clickType, onClick);
+        return this;
+    }
+
+    /**
+     * Registers a handler for the middle click.
+     *
+     * <p>This no longer also binds {@link ClickType#DROP}. Binding both meant that pressing the
+     * drop key on a button ran the middle click handler, which menu designers reasonably assume
+     * only Creative players can reach. Use {@link #setDropClick(Consumer)} when a drop handler is
+     * actually wanted.</p>
+     *
+     * @param onMiddleClick The handler.
+     * @return This item button.
+     */
+    @Contract("_-> this")
+    @NotNull
+    public ItemButton setMiddleClick(@NotNull Consumer<InventoryClickEvent> onMiddleClick) {
+        this.onClickType.put(ClickType.MIDDLE, onMiddleClick);
+        return this;
+    }
+
+    /**
+     * Registers a handler for the drop key.
+     *
+     * @param onDropClick The handler.
+     * @return This item button.
+     */
+    @Contract("_-> this")
+    @NotNull
+    public ItemButton setDropClick(@NotNull Consumer<InventoryClickEvent> onDropClick) {
+        this.onClickType.put(ClickType.DROP, onDropClick);
+        return this;
+    }
+
+    @Contract("_-> this")
+    @NotNull
+    public ItemButton setLeftClick(@NotNull Consumer<InventoryClickEvent> onLeftClick) {
+        this.onClickType.put(ClickType.LEFT, onLeftClick);
+        return this;
+    }
+
+    public void updateDisplayItem(@NotNull ItemStack displayItem) {
+        this.displayItem = displayItem;
+        if (this.inPlayerInventory) {
+            this.baseInventory.getPlayerInventoryItems().put(this.slot, this);
+        } else {
+            this.baseInventory.getSpigotInventory().setItem(this.slot, displayItem);
+        }
+    }
+
+    @Contract("_-> this")
+    @NotNull
+    public ItemButton setShiftLeftClick(@NotNull Consumer<InventoryClickEvent> onLeftClick) {
+        this.onClickType.put(ClickType.SHIFT_LEFT, onLeftClick);
+        return this;
+    }
+
+    @Contract("_-> this")
+    @NotNull
+    public ItemButton setRightClick(@NotNull Consumer<InventoryClickEvent> onRightClick) {
+        this.onClickType.put(ClickType.RIGHT, onRightClick);
+        return this;
+    }
+
+    @Contract("_-> this")
+    @NotNull
+    public ItemButton setShiftRightClick(@NotNull Consumer<InventoryClickEvent> onRightClick) {
+        this.onClickType.put(ClickType.SHIFT_RIGHT, onRightClick);
+        return this;
+    }
+
+    @Contract(pure = true)
+    @NotNull
+    public ItemStack getDisplayItem() {
+        return this.displayItem;
+    }
+
+    @Contract(pure = true)
+    public boolean isInPlayerInventory() {
+        return this.inPlayerInventory;
+    }
+
+    @Contract(pure = true)
+    @NotNull
+    public BaseInventory getBaseInventory() {
+        return this.baseInventory;
+    }
+
+    public void onClick(@NotNull InventoryClickEvent event) {
+        if (event.getClick() == ClickType.MIDDLE && event.getWhoClicked().getGameMode() != GameMode.CREATIVE) {
+            event.setCancelled(true);
+            return;
+        }
+
+        if (this.onClick != null) {
+            this.onClick.accept(event);
+        }
+
+        Consumer<InventoryClickEvent> consumer = this.onClickType.get(event.getClick());
+        if (consumer != null) {
+            consumer.accept(event);
+        }
+    }
+}

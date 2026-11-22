@@ -1,0 +1,270 @@
+package fr.maxlego08.menu.api.utils;
+
+import fr.maxlego08.menu.api.enums.MessageType;
+import org.bukkit.inventory.ItemStack;
+import org.jspecify.annotations.NonNull;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Centralized message/formatting enumeration for zMenu plugin.
+ * Provides localization keys, status messages, UI feedback, and time formatting options for commands and GUI.
+ */
+public enum Message implements IMessage {
+
+    PREFIX("&8(&6zMenu&8) "),
+    AND("and"),
+
+    VINVENTORY_ERROR("&cUnable to open inventory, internal error occurred. &8(&7Inventory ID: %id%&8)"),
+
+    TIME_YEAR("%02d %year% %02d %month% %02d %day% %02d %hour% %02d %minute% %02d %second%"),
+    TIME_MONTH("%02d %month% %02d %day% %02d %hour% %02d %minute% %02d %second%"),
+    TIME_DAY("%02d %day% %02d %hour% %02d %minute% %02d %second%"),
+    TIME_HOUR("%02d %hour% %02d minute(s) %02d %second%"),
+    TIME_HOUR_SIMPLE("%02d:%02d:%02d"),
+    TIME_MINUTE("%02d %minute% %02d %second%"),
+    TIME_SECOND("%02d %second%"),
+
+    FORMAT_SECOND("second"),
+    FORMAT_SECONDS("seconds"),
+
+    FORMAT_MINUTE("minute"),
+    FORMAT_MINUTES("minutes"),
+
+    FORMAT_HOUR("hour"),
+    FORMAT_HOURS("hours"),
+
+    FORMAT_DAY("d"),
+    FORMAT_DAYS("days"),
+
+    FORMAT_MONTH("m"),
+    FORMAT_MONTHS("months"),
+
+    FORMAT_YEAR("y"),
+    FORMAT_YEARS("years"),
+
+    COMMAND_SYNTAX_ERROR("&cYou must execute the command like this&7: &a%syntax%"),
+    COMMAND_NO_PERMISSION("&cYou do not have permission to run this command."),
+    COMMAND_NO_CONSOLE("&cOnly one player can execute this command."),
+    COMMAND_NO_ARG("&cImpossible to find the command with its arguments."),
+    COMMAND_SYNTAX_HELP("&f%syntax% &7» &7%description%"),
+    COMMAND_PLAYER_NOT_FOUND("&cUnable to find the player &f%player%&c."),
+    DOCUMENTATION_INFORMATION("&7Documentation&8: &fhttps://docs.zmenu.dev/"),
+    DOCUMENTATION_INFORMATION_LINK("&7Documentation&8: &f%link%"),
+    ADDONS_INFORMATION("&7Official addons :"),
+
+    INVENTORY_NOT_FOUND("&cUnable to find the &f%toName% &cinventory in the &f%name%&c inventory."),
+    INVENTORY_OPEN_OTHER("&aYou have just opened the inventory &f%name%&a to the &3%player%&a."),
+    INVENTORY_OPEN_SUCCESS("&aYou have just opened the inventory &f%name%&a."),
+    INVENTORY_OPEN_ERROR_INVENTORY("&cImpossible to find the inventory &f%name%&c."),
+    INVENTORY_OPEN_ERROR_COMMAND("&cImpossible to find the command &f%name%&c."),
+    INVENTORY_OPEN_ERROR_PLAYER("&cUnable to find the player, please specify."),
+    INVENTORY_OPEN_ERROR_CONSOLE("&cOnly one player can open an inventory."),
+    INVENTORY_OPEN_ITEM_ERROR("&cInventory &f%name%&c doesn't have open item."),
+    INVENTORY_OPEN_ITEM_SUCCESS("&aYou have just given the open item to the player &f%name%&a."),
+
+    DIALOG_OPEN_SUCCESS("&aYou have just opened the dialog &f%name%&a."),
+    DIALOG_OPEN_SUCCESS_OTHER("&aYou have just opened the dialog &f%name%&a to the &3%player%&a."),
+    DIALOG_OPEN_ERROR_NOT_FOUND("&cImpossible to find the dialog &f%name%&c."),
+    DIALOG_OPEN_ERROR_CONSOLE("&cOnly one player can open a dialog."),
+    DIALOG_NOT_SUPPORTED("&cYour Minecraft version does not support this menu, you need at least &f%version%&c."),
+
+    BEDROCK_OPEN_SUCCESS("&aYou have just opened the bedrock inventory &f%name%&a."),
+    BEDROCK_OPEN_SUCCESS_OTHER("&aYou have just opened the bedrock inventory &f%name%&a to the &3%player%&a."),
+    BEDROCK_OPEN_ERROR_NOT_FOUND("&cImpossible to find the bedrock inventory &f%name%&c."),
+    BEDROCK_OPEN_ERROR_NOT_BEDROCK_PLAYER("&cOnly one bedrock player can open a bedrock inventory."),
+    BEDROCK_OPEN_ERROR_CONSOLE("&cOnly one player can open a bedrock inventory."),
+
+    RELOAD("&aYou have just reloaded the configuration files. &8(&7%inventories% inventories&8)"),
+    RELOAD_INVENTORY("&aYou have just reloaded the inventories files. &8(&7%inventories% inventories&8)"),
+    RELOAD_DIALOGS("&aYou have just reloaded the dialogs files. &8(&7%dialogs% dialogs&8)"),
+    RELOAD_BEDROCK("&aYou have just reloaded the bedrock inventory files. &8(&7%bedrock% bedrocks&8)"),
+    RELOAD_INVENTORY_FILE("&aYou have just reloaded the inventory &f%name%&a."),
+    RELOAD_COMMAND("&aYou have just reloaded the commands files."),
+    RELOAD_COMMAND_FILE("&aYou have just reloaded the command &f%name%&a."),
+    RELOAD_COMMAND_ERROR("&cIt is not possible to reload the command &f%name%&c."),
+    RELOAD_FILES("&aYou have just reloaded config.json and messages.yml files."),
+
+    DUMPLOG_SUCCESS("&aYou have just generated a dumplog file, please send this link to support: &f%url%"),
+    DUMPLOG_ERROR("&cAn error occurred while generating the dumplog file, %error%."),
+
+    GIVE_ITEM_NOT_FOUND("&cItem with ID &f%itemId%&c does not exist."),
+    GIVE_ITEM_SUCCESS_SELF("&aYou have received the item &f%itemId%&a."),
+    GIVE_ITEM_SUCCESS_OTHER("&aYou have given the item &f%itemId%&a to &3%player%&a."),
+
+    PLAYERS_DATA_CLEAR_ALL("&aYou have just deleted the datas of all the players."),
+    PLAYERS_DATA_CLEAR_PLAYER("&aYou have just deleted the player's data &f%player%&a."),
+
+    PLAYERS_DATA_SET("&aYou have just added a data for the &b%player% &a with the &f%key%&a."),
+    PLAYERS_DATA_ADD("&aYou have just added a data for the &b%player% &a with the &f%key%&a."),
+    PLAYERS_DATA_SUBTRACT("&aYou have just subtract a data for the &b%player% &a with the &f%key%&a."),
+    PLAYERS_DATA_KEYS_SUCCESS("&aPlayer's Key &f%player%&8: &7%keys%"),
+    PLAYERS_DATA_KEYS_EMPTY("&cThe &f%player% &chas no key."),
+    PLAYERS_DATA_GET_SUCCESS(
+            "&fKey&8: &7%key%",
+            "&fExpired at (timestamp)&8: &7%expiredAt%",
+            "&fValue&8: &7%value%"
+    ),
+    PLAYERS_DATA_GET_ERROR("&cCannot find the key &f%key%&c."),
+    PLAYERS_DATA_REMOVE_SUCCESS("&aYou have just deleted the key &f%key% &ffor &b%player%&a."),
+    PLAYERS_DATA_REMOVE_ALL_SUCCESS("&aYou have just deleted all key's &b%key%&a."),
+    PLAYERS_DATA_REMOVE_ERROR("&cCannot find the key &f%key%&c."),
+    PLAYERS_DATA_CONVERT_SUCCESS("&aYou have just converted the datas&a."),
+    PLAYERS_DATA_CONVERT_CONFIRM("&cAre you sure you want to convert the datas ? Re-run the command to confirm."),
+
+    WEBSITE_LOGIN_ERROR_TOKEN("&cYour token seems invalid, please try again."),
+    WEBSITE_LOGIN_ERROR_ALREADY("&cYou are already connected to the site."),
+    WEBSITE_LOGIN_ERROR_INFO("&cAn error occurred during your connection, please try again."),
+    WEBSITE_LOGIN_PROCESS("&7Connection in progress, please wait."),
+    WEBSITE_LOGIN_SUCCESS("&aYou have successfully connected to the site.", "&aYou can now access your purchased resources and the inventory editor."),
+    WEBSITE_NOT_CONNECT("&cYou need to log into the site before you can do that."),
+    WEBSITE_ALREADY_INVENTORY("&cYou are already performing this action, please wait."),
+    WEBSITE_MARKETPLACE_WAIT("&7Download resources, please wait before opening inventory."),
+    WEBSITE_INVENTORY_WAIT("&7Download inventory &f%name%&7, please wait before opening inventory."),
+    WEBSITE_INVENTORY_EXIST("&cThe inventory already exists. Unable to download."),
+    WEBSITE_INVENTORY_SUCCESS("&aInventory &f%name%&a download successfully. &8(&7use /zm reload to load this inventory&8)"),
+    WEBSITE_INVENTORY_ERROR("&cAn error occurred while downloading the file."),
+    WEBSITE_MARKETPLACE_ERROR("&cUnable to retrieve data from the site, please try again."),
+    WEBSITE_DISCONNECT_SUCCESS("&cYou have just deleted the link to the site."),
+    WEBSITE_DISCONNECT_ERROR("&cYou are not connected to the site."),
+
+    WEBSITE_SYNC_PAIR_START("&7Linking your server, please wait..."),
+    WEBSITE_SYNC_PAIR_CODE("&aOpen &f<click:open_url:'%url%'>%url%</click>&a and enter the code &f&l<click:copy_to_clipboard:'%code%'>%code%</click>&a to authorize this server.", "&7Once approved, run &f<hover:show_text:'&7Run this command'><click:run_command:'/zmenu website login'>/zmenu website login</click></hover>&7 to open the live link."),
+    WEBSITE_SYNC_PAIR_PENDING("&7A pairing is already in progress, please wait."),
+    WEBSITE_SYNC_PAIR_SUCCESS("&aServer linked successfully!"),
+    WEBSITE_SYNC_PAIR_EXPIRED("&cThe pairing code expired or was already used. Run &f<hover:show_text:'&7Run this command'><click:run_command:'/zmenu website login'>/zmenu website login</click></hover>&c again."),
+    WEBSITE_SYNC_PAIR_ERROR("&cAn error occurred while linking your server, please try again."),
+    WEBSITE_SYNC_ALREADY_LINKED("&cThis server is already linked. Use &f<hover:show_text:'&7Run this command'><click:run_command:'/zmenu website connect'>/zmenu website connect</click></hover>&c."),
+    WEBSITE_SYNC_NOT_LINKED("&cThis server is not linked yet. Run &f<hover:show_text:'&7Run this command'><click:run_command:'/zmenu website login'>/zmenu website login</click></hover>&c first."),
+    WEBSITE_SYNC_NO_RELAY("&eServer linked, but the website has no live relay configured yet.", "&7Live sync will work once the site admin sets up the realtime server (Pusher/Soketi)."),
+    WEBSITE_SYNC_CONNECTING("&7Opening the live connection, please wait..."),
+    WEBSITE_SYNC_CONNECTED("&aLive sync connected. Inventories pushed from the website will reload automatically."),
+    WEBSITE_SYNC_ALREADY_CONNECTED("&cThe live connection is already open."),
+    WEBSITE_SYNC_CONNECT_ERROR("&cCould not open the live connection, please try again."),
+    WEBSITE_SYNC_AUTH_FAILED("&cThe live channel could not be authenticated. Try re-linking with &f<hover:show_text:'&7Run this command'><click:run_command:'/zmenu website login'>/zmenu website login</click></hover>&c."),
+    WEBSITE_SYNC_DISCONNECTED("&cLive sync disconnected."),
+    WEBSITE_SYNC_UNLINKED("&aThis server was unlinked from the website. Run &f<hover:show_text:'&7Run this command'><click:run_command:'/zmenu website login'>/zmenu website login</click></hover>&a to link again."),
+    WEBSITE_SYNC_NOT_CONNECTED("&cThe live sync is not active."),
+    WEBSITE_SYNC_APPLIED("&aInventory &f%name%&a was synced and reloaded from the website."),
+    WEBSITE_SYNC_APPLY_ERROR("&cFailed to apply the synced inventory &f%name%&c (rolled back)."),
+    WEBSITE_SYNC_OPENED("&aInventory &f%name%&a was opened for &f%player%&a."),
+    WEBSITE_SYNC_OPEN_OFFLINE("&e%player%&e is not online, the synced inventory &f%name%&e was not opened."),
+    WEBSITE_DOWNLOAD_ERROR_TYPE("&cThe link is not a yml file."),
+    WEBSITE_DOWNLOAD_ERROR_NAME("&cCannot find file name."),
+    WEBSITE_DOWNLOAD_ERROR_CONSOLE("&cAn error has occurred, look at the console."),
+    WEBSITE_DOWNLOAD_START("&7Start downloading inventory, please wait."),
+    WEBSITE_DOWNLOAD_ERROR_HOST("&cDownload rejected: &7%host% &cis not allowed. &8(&7Allowed: &f%allowed%&8)"),
+    WEBSITE_COMMANDS(
+            "&7/zm website login &8- &fLogin to the website",
+            "&7/zm website connect &8- &fConnect to the website",
+            "&7/zm website unlink &8- &fUnlink from the website",
+            "&7/zm website download &8- &fDownload an inventory"
+    ),
+
+    PLACEHOLDER_NEVER("never"),
+
+    LIST_EMPTY("&cNo inventory of available."),
+    LIST_INFO("&fInventories of &a%plugin% &8(&7%amount%&8): &7%inventories%"),
+
+    INVENTORY_CREATE_ERROR_SIZE("&cThe inventory size should be included in 9 and 54."),
+    INVENTORY_CREATE_ERROR_ALREADY("&cThe file &f%name%&c already exist."),
+    INVENTORY_CREATE_ERROR_EXCEPTION("&cAn error has occurred&8: &f%error%"),
+    INVENTORY_CREATE_SUCCESS("&aYou have just created the inventory &f%name%&a."),
+
+    SAVE_ERROR_EMPTY("&cYou must have an item in hand to save this item."),
+    SAVE_ERROR_NAME("&cThe name already exists for this item, please select another one."),
+    SAVE_ERROR_TYPE("&cCannot find save type."),
+    SAVE_SUCCESS("&aYou just saved the item &f%name%&a."),
+    CLICK_COOLDOWN(MessageType.ACTION, "&cPlease wait a little between two clicks."),
+    CURRENCY_NOT_ENOUGH("&cYou cannot afford this."),
+    CURRENCY_ERROR("&cThe transaction could not be completed, nothing was taken."),
+
+    COMMAND_ARGUMENT_INTEGER("&cThe argument &f%argument%&c must be an integer."),
+    COMMAND_ARGUMENT_STRING("&cThe argument &f%argument%&c must be a string."),
+    COMMAND_ARGUMENT_BOOLEAN("&cThe argument &f%argument%&c must be a boolean."),
+    COMMAND_ARGUMENT_DOUBLE("&cThe argument &f%argument%&c must be a double."),
+    COMMAND_ARGUMENT_ONLINE_PLAYER("&cThe argument &f%argument%&c must be a player."),
+    COMMAND_ARGUMENT_PLAYER("&cThe argument &f%argument%&c must be a player."),
+    COMMAND_ARGUMENT_ENTITY("&cThe argument &f%argument%&c must be an entity."),
+    COMMAND_ARGUMENT_LOCATION("&cThe argument &f%argument%&c must be a location."),
+    COMMAND_ARGUMENT_MATERIAL("&cThe argument &f%argument%&c must be a material."),
+    COMMAND_ARGUMENT_BLOCK("&cThe argument &f%argument%&c must be a block."),
+    COMMAND_ARGUMENT_WORLD("&cThe argument &f%argument%&c must be a world."),
+
+    GLOBAL_PLACEHOLDER_NOT_FOUND("&cGlobal placeholder not found."),
+    ;
+
+    private List<String> messages;
+    private String message;
+    private MessageType type = MessageType.TCHAT;
+
+    private ItemStack itemStack;
+
+    Message(String message) {
+        this.message = message;
+    }
+
+    Message(String... message) {
+        this.messages = Arrays.asList(message);
+    }
+
+    Message(MessageType type, String... message) {
+        this.messages = Arrays.asList(message);
+        this.type = type;
+    }
+
+    Message(MessageType type, String message) {
+        this.message = message;
+        this.type = type;
+    }
+
+    public @NonNull String getMessage() {
+        return this.message;
+    }
+
+    public String toMsg() {
+        return this.message;
+    }
+
+    public String msg() {
+        return this.message;
+    }
+
+    public @NonNull List<String> getMessages() {
+        return this.messages == null ? Collections.singletonList(this.message) : this.messages;
+    }
+
+    public void setMessages(List<String> messages) {
+        this.messages = messages;
+    }
+
+    public boolean isMessage() {
+        return this.messages != null && this.messages.size() > 1;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String replace(String a, String b) {
+        return this.message.replace(a, b);
+    }
+
+    public @NonNull MessageType getType() {
+        return this.type;
+    }
+
+    public void setType(MessageType type) {
+        this.type = type;
+    }
+
+    public ItemStack getItemStack() {
+        return this.itemStack;
+    }
+
+    public void setItemStack(ItemStack itemStack) {
+        this.itemStack = itemStack;
+    }
+}

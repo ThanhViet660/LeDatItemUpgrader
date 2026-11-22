@@ -1,0 +1,717 @@
+package fr.maxlego08.menu.api.configuration;
+
+import fr.maxlego08.menu.api.configuration.annotation.ConfigOption;
+import fr.maxlego08.menu.api.configuration.annotation.ConfigUpdate;
+import fr.maxlego08.menu.api.enums.PerformanceFilterMode;
+import fr.maxlego08.menu.api.enums.dialog.DialogInputType;
+import fr.maxlego08.menu.api.utils.OpGrantMethod;
+import fr.maxlego08.menu.zcore.logger.Logger;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.event.inventory.ClickType;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+
+
+public class Configuration {
+    public static boolean HAS_DIALOG_SUPPORT = false;
+    public static boolean HAS_BEDROCK_INVENTORY_SUPPORT = false;
+
+    // Enable debug, allows you to display errors in the console that would normally be hidden.
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable debug"
+    )
+    public static boolean enableDebug = false;
+
+    // Enable debug time, allows you to display the code execution time in nanosecond, perfect for testing the effectiveness of the plugin.
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable debug time"
+    )
+    public static boolean enableDebugTime = false;
+
+    // Enable an information message, allows you to view messages that tell you about an inventory or that an order has been successfully loaded.
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable information message"
+    )
+    public static boolean enableInformationMessage = true;
+
+    // Enable save or load file log in console
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable log storage file"
+    )
+    public static boolean enableLogStorageFile = false;
+
+    // Skip update check
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Skip update check"
+    )
+    public static boolean skipUpdateCheck = false;
+
+    // Enable open message, default value for the command /zm open <inventory name> <player> <display message>
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable open message"
+    )
+    public static boolean enableOpenMessage = true;
+
+    // Enable mini message format, allows you to activate the mini message format, available from 1.17 onwards, more information here: https://docs.advntr.dev/minimessage/index.html
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable mini message format"
+    )
+    public static boolean enableMiniMessageFormat = true;
+
+    // Enable player command in chat, Allows you to ensure that when a player executes a command, they execute it from the chat and not from the console. If you have "fake" command, which are not saved in spigot you need to enable this option.
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable player command in chat"
+    )
+    public static boolean enablePlayerCommandInChat = false;
+
+    // Allows you to use the FastEvent interface instead of bukkit events. You gain performance. To use FastEvent, please read the documentation.
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable FastEvent"
+    )
+    public static boolean enableFastEvent = false;
+
+    // Seconds save player data: The time in seconds for automatic backup of player data.
+    @ConfigOption(
+            type = DialogInputType.NUMBER_RANGE,
+            label = "Seconds save player data",
+            startRange = 60,
+            endRange = 3600,
+            stepRange = 5
+    )
+    public static int secondsSavePlayerData = 600;
+
+    // Seconds save player data: The time in seconds for automatic backup of inventories data.
+    @ConfigOption(
+            type = DialogInputType.NUMBER_RANGE,
+            label = "Seconds save player inventories",
+            startRange = 60,
+            endRange = 3600,
+            stepRange = 5
+    )
+    public static int secondsSavePlayerInventories = 600;
+
+    // Default menu name
+    @ConfigOption(
+            type = DialogInputType.TEXT,
+            label = "Default menu name"
+    )
+    public static String mainMenu = "example";
+
+    // Open main menu when swap item offhand key is press
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Use swap item offhand key to open main menu"
+    )
+    public static boolean useSwapItemOffHandKeyToOpenMainMenu = false;
+
+    // Open main menu when swap item offhand key is press and sneak key
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Use swap item offhand key to open main menu needs shift"
+    )
+    public static boolean useSwapItemOffHandKeyToOpenMainMenuNeedsShift = false;
+
+    // Load specific inventories
+    @ConfigOption(
+            type = DialogInputType.TEXT,
+            label = "Specify path menus (comma separated)"
+    )
+    public static List<String> specifyPathMenus = new ArrayList<>();
+
+    // Generate default configuration
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Generate default file"
+    )
+    public static boolean generateDefaultFile = true;
+
+    // Does not take double click into account
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Disable double click event"
+    )
+    public static boolean disableDoubleClickEvent = true;
+
+    // Enable anti dupe
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable anti dupe"
+    )
+    public static boolean enableAntiDupe = true;
+    // Enable anti dupe discord notification
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable anti dupe discord notification"
+    )
+    public static boolean enableAntiDupeDiscordNotification = false;
+    @ConfigOption(
+            type = DialogInputType.TEXT,
+            label = "Anti dupe discord webhook url",
+            maxLength = 100
+    )
+    public static String antiDupeDiscordWebhookUrl = "https://discord.com/api/webhooks/<your discord webhook url>";
+    @ConfigOption(
+            type = DialogInputType.TEXT,
+            label = "Anti dupe message",
+            maxLength = 200
+    )
+    public static String antiDupeMessage = "**%player%** use %amount% %itemname% which comes from zMenu. Removing it !";
+
+    @ConfigOption(
+            type = DialogInputType.TEXT,
+            label = "All click types (comma separated)"
+    )
+    public static List<ClickType> allClicksType = Arrays.asList(ClickType.MIDDLE, ClickType.RIGHT, ClickType.LEFT, ClickType.SHIFT_RIGHT, ClickType.SHIFT_LEFT);
+    // Enable cache itemstack in memory
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable cache item stack"
+    )
+    public static boolean enableCacheItemStack = true;
+
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable cooldown click"
+    )
+
+    public static boolean enableCooldownClick = true;
+    @ConfigOption(
+            type = DialogInputType.NUMBER_RANGE,
+            label = "Cooldown click milliseconds",
+            endRange = 1000,
+            stepRange = 10
+    )
+
+    public static long cooldownClickMilliseconds = 250;
+    @ConfigOption(
+            type = DialogInputType.NUMBER_RANGE,
+            label = "Cache PlaceholderAPI",
+            endRange = 300,
+            stepRange = 5
+    )
+    public static long cachePlaceholderAPI = 20;
+
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable cache PlaceholderAPI"
+    )
+    public static boolean enableCachePlaceholderAPI = false;
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable download command"
+    )
+    public static boolean enableDownloadCommand = false;
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable player open inventory logs"
+    )
+    public static boolean enablePlayerOpenInventoryLogs = true;
+
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable player commands as OP action (requires server restart)"
+    )
+    public static boolean enablePlayerCommandsAsOPAction = false;
+
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable packet event click limiter"
+    )
+    public static boolean enablePacketEventClickLimiter = false;
+
+    @ConfigOption(
+            type = DialogInputType.NUMBER_RANGE,
+            label = "Packet event click limiter milliseconds",
+            endRange = 1000,
+            stepRange = 10
+    )
+    public static long packetEventClickLimiterMilliseconds = 150L;
+
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enforce click types"
+    )
+    public static boolean enforceClickTypes = true;
+
+    // Component cache bounds. The MiniMessage component cache used to be an unbounded map, which
+    // grew forever once player placeholders were resolved into item names, lore or messages.
+    // Set both of these to 0 to restore that old unbounded behaviour.
+    @ConfigOption(
+            type = DialogInputType.NUMBER_RANGE,
+            label = "Component cache max size",
+            endRange = 100000,
+            stepRange = 1000
+    )
+    public static int componentCacheMaxSize = 10000;
+
+    @ConfigOption(
+            type = DialogInputType.NUMBER_RANGE,
+            label = "Component cache expire minutes",
+            endRange = 1440,
+            stepRange = 5
+    )
+    public static long componentCacheExpireMinutes = 10L;
+
+    // Namespace the component cache keys so an item name and a message with the same text stop
+    // sharing one entry. They cache differently shaped components, so whichever was parsed first
+    // used to win and the other rendered wrong, most visibly as an italic item name.
+    // Set to false to restore the previous, colliding behaviour.
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Fix component cache key collisions"
+    )
+    public static boolean fixComponentCacheKeyCollisions = true;
+
+    // Write buffered player data to the database when a player disconnects, instead of waiting for
+    // the next batch-task cycle. Shrinks what a server crash can lose. Set to false if the extra
+    // write on every quit is a problem, the shutdown flush still runs either way.
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Flush storage on quit"
+    )
+    public static boolean flushStorageOnQuit = true;
+
+    // How long to wait before logging the same failing button again. A button whose actions throw
+    // used to print a full stack trace on every single click, so a player holding the mouse down on
+    // a broken button filled the console and the log file. Set to 0 to log every occurrence.
+    @ConfigOption(
+            type = DialogInputType.NUMBER_RANGE,
+            label = "Click error log cooldown seconds",
+            endRange = 600,
+            stepRange = 5
+    )
+    public static long clickErrorLogCooldownSeconds = 30L;
+
+    // Security: close the menu when the player moves away from the location where it was opened.
+    // Prevents "ghost GUI" abuse where a client drops the screen locally without sending a close packet,
+    // then keeps clicking the still-valid container from anywhere on the map.
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Close inventory on move"
+    )
+    public static boolean closeInventoryOnMove = true;
+
+    @ConfigOption(
+            type = DialogInputType.NUMBER_RANGE,
+            label = "Max move distance",
+            endRange = 64,
+            stepRange = 1
+    )
+    public static double maxMoveDistance = 2.0;
+
+    // Security: close the menu as soon as the player takes or deals damage.
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Close inventory on damage"
+    )
+    public static boolean closeInventoryOnDamage = true;
+
+    @ConfigOption(
+            type = DialogInputType.SINGLE_OPTION,
+            label = "OP grant method"
+    )
+    public static OpGrantMethod opGrantMethod = OpGrantMethod.ATTACHMENT;
+
+    @ConfigOption(
+            key = "enableToast",
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable toast"
+    )
+    public static boolean enableToast = true;
+
+    @ConfigOption(
+            key = "enablePerformanceDebug",
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable performance debug"
+    )
+    public static boolean enablePerformanceDebug = false;
+
+    @ConfigOption(
+            type = DialogInputType.TEXT,
+            label = "Skip close actions on inventory switch (comma separated)"
+    )
+    public static List<String> skipCloseActionsOnInventorySwitch = Arrays.asList("inventory", "inv", "back");
+
+    @ConfigOption(
+            type = DialogInputType.TEXT,
+            label = "Allowed downloadable websites (comma separated)"
+    )
+    public static List<String> allowedDownloadableWebsite = new ArrayList<>(List.of("minecraft-inventory-builder.com"));
+
+    // Reopen the website live-sync link automatically a few seconds after startup, when this server is
+    // already linked. Off means the operator must run /zmenu website connect after every restart.
+    @ConfigOption(
+            type = DialogInputType.BOOLEAN,
+            trueText = "<green>Enabled",
+            falseText = "<red>Disabled",
+            label = "Enable website auto connect"
+    )
+    public static boolean enableWebsiteAutoConnect = true;
+
+    @ConfigOption(
+            type = DialogInputType.SINGLE_OPTION,
+            label = "Performance debug filter mode"
+    )
+    public static PerformanceFilterMode performanceFilterMode = PerformanceFilterMode.DISABLED;
+
+    @ConfigOption(
+            type = DialogInputType.TEXT,
+            label = "Performance filter operations (comma separated)"
+    )
+    public static List<String> performanceFilterOperations = new ArrayList<>();
+
+    @ConfigOption(
+            type = DialogInputType.NUMBER_RANGE,
+            label = "Performance threshold milliseconds",
+            endRange = 1000,
+            stepRange = 1
+    )
+    public static long performanceThresholdMs = 10;
+
+    @ConfigUpdate
+    public static boolean updated = false;
+    /**
+     * static Singleton instance.
+     */
+    private static volatile Configuration instance;
+
+    /**
+     * Private constructor for singleton.
+     */
+    private Configuration() {
+    }
+
+    /**
+     * Return a singleton instance of Configuration.
+     */
+    public static Configuration getInstance() {
+        // Double lock for thread safety.
+        if (instance == null) {
+            synchronized (Configuration.class) {
+                if (instance == null) {
+                    instance = new Configuration();
+                }
+            }
+        }
+        return instance;
+    }
+
+    public void load(@NotNull FileConfiguration fileConfiguration) {
+
+        enableDebug = fileConfiguration.getBoolean(ConfigPath.ENABLE_DEBUG.getPath());
+        enableDebugTime = fileConfiguration.getBoolean(ConfigPath.ENABLE_DEBUG_TIME.getPath());
+        enableInformationMessage = fileConfiguration.getBoolean(ConfigPath.ENABLE_INFORMATION_MESSAGE.getPath());
+        enableLogStorageFile = fileConfiguration.getBoolean(ConfigPath.ENABLE_LOG_STORAGE_FILE.getPath());
+        skipUpdateCheck = fileConfiguration.getBoolean(ConfigPath.SKIP_UPDATE_CHECK.getPath());
+        enableOpenMessage = fileConfiguration.getBoolean(ConfigPath.ENABLE_OPEN_MESSAGE.getPath());
+        enableMiniMessageFormat = fileConfiguration.getBoolean(ConfigPath.ENABLE_MINI_MESSAGE_FORMAT.getPath());
+        enablePlayerCommandInChat = fileConfiguration.getBoolean(ConfigPath.ENABLE_PLAYER_COMMAND_IN_CHAT.getPath());
+        enableFastEvent = fileConfiguration.getBoolean(ConfigPath.ENABLE_FAST_EVENT.getPath());
+
+        secondsSavePlayerData = fileConfiguration.getInt(ConfigPath.SECONDS_SAVE_PLAYER_DATA.getPath());
+        secondsSavePlayerInventories = fileConfiguration.getInt(ConfigPath.SECONDS_SAVE_PLAYER_INVENTORIES.getPath());
+
+        mainMenu = fileConfiguration.getString(ConfigPath.MAIN_MENU.getPath());
+        useSwapItemOffHandKeyToOpenMainMenu = fileConfiguration.getBoolean(ConfigPath.USE_SWAP_ITEM_OFF_HAND_KEY_TO_OPEN_MAIN_MENU.getPath());
+        useSwapItemOffHandKeyToOpenMainMenuNeedsShift = fileConfiguration.getBoolean(ConfigPath.USE_SWAP_ITEM_OFF_HAND_KEY_TO_OPEN_MAIN_MENU_NEEDS_SHIFT.getPath());
+
+        specifyPathMenus = fileConfiguration.getStringList(ConfigPath.SPECIFY_PATH_MENUS.getPath());
+        generateDefaultFile = fileConfiguration.getBoolean(ConfigPath.GENERATE_DEFAULT_FILE.getPath());
+        disableDoubleClickEvent = fileConfiguration.getBoolean(ConfigPath.DISABLE_DOUBLE_CLICK_EVENT.getPath());
+
+        enableAntiDupe = fileConfiguration.getBoolean(ConfigPath.ENABLE_ANTI_DUPE.getPath());
+        enableAntiDupeDiscordNotification = fileConfiguration.getBoolean(ConfigPath.ENABLE_ANTI_DUPE_DISCORD_NOTIFICATION.getPath());
+        antiDupeDiscordWebhookUrl = fileConfiguration.getString(ConfigPath.ANTI_DUPE_DISCORD_WEBHOOK_URL.getPath());
+        antiDupeMessage = fileConfiguration.getString(ConfigPath.ANTI_DUPE_MESSAGE.getPath());
+
+        List<String> clickTypeStrings = fileConfiguration.getStringList(ConfigPath.ALL_CLICKS_TYPE.getPath());
+        List<ClickType> clickTypes = new ArrayList<>(clickTypeStrings.size());
+        for (String name : clickTypeStrings) {
+            try {
+                clickTypes.add(ClickType.valueOf(name));
+            } catch (IllegalArgumentException e) {
+                Bukkit.getLogger().warning("[zMenu] Invalid click type in config: " + name);
+            }
+        }
+        allClicksType = clickTypes;
+
+        enableCacheItemStack = fileConfiguration.getBoolean(ConfigPath.ENABLE_CACHE_ITEM_STACK.getPath());
+        // Both read with an explicit default: the one-arg getters return false / 0 for a missing key,
+        // which would silently disable the click throttle on a config that predates these options.
+        enableCooldownClick = fileConfiguration.getBoolean(ConfigPath.ENABLE_COOLDOWN_CLICK.getPath(), true);
+        cooldownClickMilliseconds = fileConfiguration.getLong(ConfigPath.COOLDOWN_CLICK_MILLISECONDS.getPath(), 250L);
+
+        cachePlaceholderAPI = fileConfiguration.getLong(ConfigPath.CACHE_PLACEHOLDER_API.getPath());
+        enableCachePlaceholderAPI = fileConfiguration.getBoolean(ConfigPath.ENABLE_CACHE_PLACEHOLDER_API.getPath());
+
+        enableDownloadCommand = fileConfiguration.getBoolean(ConfigPath.ENABLE_DOWNLOAD_COMMAND.getPath());
+        enablePlayerOpenInventoryLogs = fileConfiguration.getBoolean(ConfigPath.ENABLE_PLAYER_OPEN_INVENTORY_LOGS.getPath());
+
+        enablePlayerCommandsAsOPAction = fileConfiguration.getBoolean(ConfigPath.ENABLE_PLAYER_COMMANDS_AS_OP_ACTION.getPath());
+        try {
+            opGrantMethod = OpGrantMethod.valueOf(fileConfiguration.getString(ConfigPath.OP_GRANT_METHOD.getPath(), OpGrantMethod.ATTACHMENT.name()).toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            Logger.info("Invalid op grant method in config, defaulting to ATTACHMENT.");
+            opGrantMethod = OpGrantMethod.ATTACHMENT;
+        }
+        enableToast = fileConfiguration.getBoolean(ConfigPath.ENABLE_TOAST.getPath(), true);
+
+        enablePacketEventClickLimiter = fileConfiguration.getBoolean(ConfigPath.ENABLE_PACKET_EVENT_CLICK_LIMITER.getPath());
+        packetEventClickLimiterMilliseconds = fileConfiguration.getLong(ConfigPath.PACKET_EVENT_CLICK_LIMITER_MILLISECONDS.getPath(), 150L);
+
+        enforceClickTypes = fileConfiguration.getBoolean(ConfigPath.ENFORCE_CLICK_TYPES.getPath(), true);
+        componentCacheMaxSize = fileConfiguration.getInt(ConfigPath.COMPONENT_CACHE_MAX_SIZE.getPath(), 10000);
+        componentCacheExpireMinutes = fileConfiguration.getLong(ConfigPath.COMPONENT_CACHE_EXPIRE_MINUTES.getPath(), 10L);
+        fixComponentCacheKeyCollisions = fileConfiguration.getBoolean(ConfigPath.FIX_COMPONENT_CACHE_KEY_COLLISIONS.getPath(), true);
+        flushStorageOnQuit = fileConfiguration.getBoolean(ConfigPath.FLUSH_STORAGE_ON_QUIT.getPath(), true);
+        clickErrorLogCooldownSeconds = fileConfiguration.getLong(ConfigPath.CLICK_ERROR_LOG_COOLDOWN_SECONDS.getPath(), 30L);
+        closeInventoryOnMove = fileConfiguration.getBoolean(ConfigPath.CLOSE_INVENTORY_ON_MOVE.getPath(), true);
+        maxMoveDistance = fileConfiguration.getDouble(ConfigPath.MAX_MOVE_DISTANCE.getPath(), 2.0);
+        closeInventoryOnDamage = fileConfiguration.getBoolean(ConfigPath.CLOSE_INVENTORY_ON_DAMAGE.getPath(), true);
+
+        enablePerformanceDebug = fileConfiguration.getBoolean(ConfigPath.ENABLE_PERFORMANCE_DEBUG.getPath(), false);
+        performanceThresholdMs = fileConfiguration.getLong(ConfigPath.PERFORMANCE_DEBUG_THRESHOLD_MS.getPath(), 10L);
+        performanceFilterOperations = fileConfiguration.getStringList(ConfigPath.PERFORMANCE_DEBUG_FILTER_OPERATIONS.getPath());
+        skipCloseActionsOnInventorySwitch = fileConfiguration.getStringList(ConfigPath.SKIP_CLOSE_ACTIONS_ON_INVENTORY_SWITCH.getPath());
+        try {
+            performanceFilterMode = PerformanceFilterMode.valueOf(fileConfiguration.getString(ConfigPath.PERFORMANCE_DEBUG_FILTER_MODE.getPath(), PerformanceFilterMode.DISABLED.name()).toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            Logger.info("Invalid performance filter mode in config, defaulting to DISABLED.");
+            performanceFilterMode = PerformanceFilterMode.DISABLED;
+        }
+
+        // Two-arg form on purpose: a config.yml written before this option existed has no such key, and
+        // the one-arg getBoolean would silently turn the feature OFF on every already-installed server.
+        enableWebsiteAutoConnect = fileConfiguration.getBoolean(ConfigPath.ENABLE_WEBSITE_AUTO_CONNECT.getPath(), true);
+
+        List<String> loadedHosts = fileConfiguration.getStringList(ConfigPath.ALLOWED_DOWNLOADABLE_WEBSITE.getPath());
+        if (!loadedHosts.isEmpty()) {
+            allowedDownloadableWebsite = loadedHosts;
+        }
+    }
+
+    public void save(@NotNull FileConfiguration fileConfiguration, @NotNull File file) {
+        if (!updated) {
+            return;
+        }
+        fileConfiguration.set(ConfigPath.ENABLE_DEBUG.getPath(), enableDebug);
+        fileConfiguration.set(ConfigPath.ENABLE_DEBUG_TIME.getPath(), enableDebugTime);
+        fileConfiguration.set(ConfigPath.ENABLE_INFORMATION_MESSAGE.getPath(), enableInformationMessage);
+        fileConfiguration.set(ConfigPath.ENABLE_LOG_STORAGE_FILE.getPath(), enableLogStorageFile);
+        fileConfiguration.set(ConfigPath.SKIP_UPDATE_CHECK.getPath(), skipUpdateCheck);
+        fileConfiguration.set(ConfigPath.ENABLE_OPEN_MESSAGE.getPath(), enableOpenMessage);
+        fileConfiguration.set(ConfigPath.ENABLE_MINI_MESSAGE_FORMAT.getPath(), enableMiniMessageFormat);
+        fileConfiguration.set(ConfigPath.ENABLE_PLAYER_COMMAND_IN_CHAT.getPath(), enablePlayerCommandInChat);
+        fileConfiguration.set(ConfigPath.ENABLE_FAST_EVENT.getPath(), enableFastEvent);
+
+        fileConfiguration.set(ConfigPath.SECONDS_SAVE_PLAYER_DATA.getPath(), secondsSavePlayerData);
+        fileConfiguration.set(ConfigPath.SECONDS_SAVE_PLAYER_INVENTORIES.getPath(), secondsSavePlayerInventories);
+
+        fileConfiguration.set(ConfigPath.MAIN_MENU.getPath(), mainMenu);
+        fileConfiguration.set(ConfigPath.USE_SWAP_ITEM_OFF_HAND_KEY_TO_OPEN_MAIN_MENU.getPath(), useSwapItemOffHandKeyToOpenMainMenu);
+        fileConfiguration.set(ConfigPath.USE_SWAP_ITEM_OFF_HAND_KEY_TO_OPEN_MAIN_MENU_NEEDS_SHIFT.getPath(), useSwapItemOffHandKeyToOpenMainMenuNeedsShift);
+
+        fileConfiguration.set(ConfigPath.SPECIFY_PATH_MENUS.getPath(), specifyPathMenus);
+        fileConfiguration.set(ConfigPath.GENERATE_DEFAULT_FILE.getPath(), generateDefaultFile);
+        fileConfiguration.set(ConfigPath.DISABLE_DOUBLE_CLICK_EVENT.getPath(), disableDoubleClickEvent);
+
+        fileConfiguration.set(ConfigPath.ENABLE_ANTI_DUPE.getPath(), enableAntiDupe);
+        fileConfiguration.set(ConfigPath.ENABLE_ANTI_DUPE_DISCORD_NOTIFICATION.getPath(), enableAntiDupeDiscordNotification);
+        fileConfiguration.set(ConfigPath.ANTI_DUPE_DISCORD_WEBHOOK_URL.getPath(), antiDupeDiscordWebhookUrl);
+        fileConfiguration.set(ConfigPath.ANTI_DUPE_MESSAGE.getPath(), antiDupeMessage);
+
+        List<String> clickTypeNames = new ArrayList<>(allClicksType.size());
+        for (ClickType clickType : allClicksType) {
+            clickTypeNames.add(clickType.name());
+        }
+        fileConfiguration.set(ConfigPath.ALL_CLICKS_TYPE.getPath(), clickTypeNames);
+
+        fileConfiguration.set(ConfigPath.ENABLE_CACHE_ITEM_STACK.getPath(), enableCacheItemStack);
+        fileConfiguration.set(ConfigPath.ENABLE_COOLDOWN_CLICK.getPath(), enableCooldownClick);
+        fileConfiguration.set(ConfigPath.COOLDOWN_CLICK_MILLISECONDS.getPath(), cooldownClickMilliseconds);
+        fileConfiguration.set(ConfigPath.CACHE_PLACEHOLDER_API.getPath(), cachePlaceholderAPI);
+        fileConfiguration.set(ConfigPath.ENABLE_CACHE_PLACEHOLDER_API.getPath(), enableCachePlaceholderAPI);
+        fileConfiguration.set(ConfigPath.ENABLE_DOWNLOAD_COMMAND.getPath(), enableDownloadCommand);
+        fileConfiguration.set(ConfigPath.ENABLE_PLAYER_OPEN_INVENTORY_LOGS.getPath(), enablePlayerOpenInventoryLogs);
+        fileConfiguration.set(ConfigPath.ENABLE_PLAYER_COMMANDS_AS_OP_ACTION.getPath(), enablePlayerCommandsAsOPAction);
+        fileConfiguration.set(ConfigPath.OP_GRANT_METHOD.getPath(), opGrantMethod.name());
+        fileConfiguration.set(ConfigPath.ENABLE_TOAST.getPath(), enableToast);
+        fileConfiguration.set(ConfigPath.SKIP_CLOSE_ACTIONS_ON_INVENTORY_SWITCH.getPath(), skipCloseActionsOnInventorySwitch);
+        fileConfiguration.set(ConfigPath.ENABLE_PACKET_EVENT_CLICK_LIMITER.getPath(), enablePacketEventClickLimiter);
+        fileConfiguration.set(ConfigPath.PACKET_EVENT_CLICK_LIMITER_MILLISECONDS.getPath(), packetEventClickLimiterMilliseconds);
+        fileConfiguration.set(ConfigPath.ENFORCE_CLICK_TYPES.getPath(), enforceClickTypes);
+        fileConfiguration.set(ConfigPath.COMPONENT_CACHE_MAX_SIZE.getPath(), componentCacheMaxSize);
+        fileConfiguration.set(ConfigPath.COMPONENT_CACHE_EXPIRE_MINUTES.getPath(), componentCacheExpireMinutes);
+        fileConfiguration.set(ConfigPath.FIX_COMPONENT_CACHE_KEY_COLLISIONS.getPath(), fixComponentCacheKeyCollisions);
+        fileConfiguration.set(ConfigPath.FLUSH_STORAGE_ON_QUIT.getPath(), flushStorageOnQuit);
+        fileConfiguration.set(ConfigPath.CLICK_ERROR_LOG_COOLDOWN_SECONDS.getPath(), clickErrorLogCooldownSeconds);
+        fileConfiguration.set(ConfigPath.CLOSE_INVENTORY_ON_MOVE.getPath(), closeInventoryOnMove);
+        fileConfiguration.set(ConfigPath.MAX_MOVE_DISTANCE.getPath(), maxMoveDistance);
+        fileConfiguration.set(ConfigPath.CLOSE_INVENTORY_ON_DAMAGE.getPath(), closeInventoryOnDamage);
+        fileConfiguration.set(ConfigPath.ENABLE_PERFORMANCE_DEBUG.getPath(), enablePerformanceDebug);
+        fileConfiguration.set(ConfigPath.PERFORMANCE_DEBUG_THRESHOLD_MS.getPath(), performanceThresholdMs);
+        fileConfiguration.set(ConfigPath.PERFORMANCE_DEBUG_FILTER_MODE.getPath(), performanceFilterMode.name());
+        fileConfiguration.set(ConfigPath.PERFORMANCE_DEBUG_FILTER_OPERATIONS.getPath(), performanceFilterOperations);
+        fileConfiguration.set(ConfigPath.ALLOWED_DOWNLOADABLE_WEBSITE.getPath(), allowedDownloadableWebsite);
+        fileConfiguration.set(ConfigPath.ENABLE_WEBSITE_AUTO_CONNECT.getPath(), enableWebsiteAutoConnect);
+        updated = false;
+        try {
+            fileConfiguration.save(file);
+        } catch (IOException e) {
+            Bukkit.getLogger().warning("[zMenu] Unable to save config file: " + e.getMessage());
+        }
+    }
+
+    private enum ConfigPath {
+        ENABLE_DEBUG("enable-debug"),
+        ENABLE_DEBUG_TIME("enable-debug-time"),
+        ENABLE_INFORMATION_MESSAGE("enable-information-message"),
+        ENABLE_LOG_STORAGE_FILE("enable-log-storage-file"),
+        SKIP_UPDATE_CHECK("skip-update-check"),
+        ENABLE_OPEN_MESSAGE("enable-open-message"),
+        ENABLE_MINI_MESSAGE_FORMAT("enable-mini-message-format"),
+        ENABLE_PLAYER_COMMAND_IN_CHAT("enable-player-command-in-chat"),
+        ENABLE_FAST_EVENT("enable-fast-event"),
+
+        SECONDS_SAVE_PLAYER_DATA("seconds-save-player-data"),
+        SECONDS_SAVE_PLAYER_INVENTORIES("seconds-save-player-inventories"),
+
+        MAIN_MENU("main-menu"),
+        USE_SWAP_ITEM_OFF_HAND_KEY_TO_OPEN_MAIN_MENU("use-swap-item-off-hand-key-to-open-main-menu"),
+        USE_SWAP_ITEM_OFF_HAND_KEY_TO_OPEN_MAIN_MENU_NEEDS_SHIFT("use-swap-item-off-hand-key-to-open-main-menu-needs-shift"),
+
+        SPECIFY_PATH_MENUS("specify-path-menus"),
+        GENERATE_DEFAULT_FILE("generate-default-file"),
+        DISABLE_DOUBLE_CLICK_EVENT("disable-double-click-event"),
+
+        ENABLE_ANTI_DUPE("enable-anti-dupe"),
+        ENABLE_ANTI_DUPE_DISCORD_NOTIFICATION("enable-anti-dupe-discord-notification"),
+        ANTI_DUPE_DISCORD_WEBHOOK_URL("anti-dupe-discord-webhook-url"),
+        ANTI_DUPE_MESSAGE("anti-dupe-message"),
+
+        ALL_CLICKS_TYPE("all-clicks-type"),
+
+        ENABLE_CACHE_ITEM_STACK("enable-cache-item-stack"),
+        ENABLE_COOLDOWN_CLICK("enable-cooldown-click"),
+        COOLDOWN_CLICK_MILLISECONDS("cooldown-click-milliseconds"),
+
+        CACHE_PLACEHOLDER_API("cache-placeholder-api"),
+        ENABLE_CACHE_PLACEHOLDER_API("enable-cache-placeholder-api"),
+
+        ENABLE_DOWNLOAD_COMMAND("enable-download-command"),
+        ENABLE_PLAYER_OPEN_INVENTORY_LOGS("enable-player-open-inventory-logs"),
+
+        ENABLE_PLAYER_COMMANDS_AS_OP_ACTION("enable-player-commands-as-op-action"),
+        OP_GRANT_METHOD("op-grant-method"),
+        ENABLE_TOAST("enable-toast"),
+        SKIP_CLOSE_ACTIONS_ON_INVENTORY_SWITCH("skip-close-actions-on-inventory-switch"),
+
+        ENABLE_PACKET_EVENT_CLICK_LIMITER("enable-packet-event-click-limiter"),
+        PACKET_EVENT_CLICK_LIMITER_MILLISECONDS("packet-event-click-limiter-milliseconds"),
+
+        ENFORCE_CLICK_TYPES("enforce-click-types"),
+        COMPONENT_CACHE_MAX_SIZE("component-cache.max-size"),
+        COMPONENT_CACHE_EXPIRE_MINUTES("component-cache.expire-minutes"),
+        FIX_COMPONENT_CACHE_KEY_COLLISIONS("component-cache.fix-key-collisions"),
+        FLUSH_STORAGE_ON_QUIT("flush-storage-on-quit"),
+        CLICK_ERROR_LOG_COOLDOWN_SECONDS("click-error-log-cooldown-seconds"),
+        CLOSE_INVENTORY_ON_MOVE("close-on-move"),
+        MAX_MOVE_DISTANCE("max-move-distance"),
+        CLOSE_INVENTORY_ON_DAMAGE("close-on-damage"),
+
+        ENABLE_PERFORMANCE_DEBUG("enable-performance-debug"),
+        PERFORMANCE_DEBUG_THRESHOLD_MS("performance-debug.threshold-ms"),
+        PERFORMANCE_DEBUG_FILTER_MODE("performance-debug.filter.mode"),
+        PERFORMANCE_DEBUG_FILTER_OPERATIONS("performance-debug.filter.operations"),
+
+        ALLOWED_DOWNLOADABLE_WEBSITE("allowed-downloadable-website"),
+        ENABLE_WEBSITE_AUTO_CONNECT("enable-website-auto-connect");
+
+        private final String path;
+
+        ConfigPath(@NotNull String path) {
+            this.path = path;
+        }
+
+        @Contract(pure = true)
+        @NotNull
+        public String getPath() {
+            return this.path;
+        }
+    }
+}
